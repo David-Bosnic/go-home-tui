@@ -11,12 +11,6 @@ import (
 )
 
 func (config *apiConfig) handlerEventsGet(w http.ResponseWriter, r *http.Request) {
-	type event struct {
-		Title     string `json:"title"`
-		StartTime string `json:"startTime"`
-		Location  string `json:"location"`
-		EndTime   string `json:"endTime"`
-	}
 	url := fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/%s/events", config.calendarID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

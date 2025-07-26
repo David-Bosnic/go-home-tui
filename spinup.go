@@ -110,7 +110,6 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
-			return
 		}
 
 		next.ServeHTTP(w, r)
@@ -139,10 +138,12 @@ func SpinUp() {
 	}
 
 	fmt.Println("Running Server")
-	err := ServerMux.ListenAndServe()
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		fmt.Println("Spinning up server")
-	}
+	go func() {
+		err := ServerMux.ListenAndServe()
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			fmt.Println("Spinning up server")
+		}
+	}()
 }
