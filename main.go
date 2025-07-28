@@ -3,11 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"io"
 	"net/http"
 	"os"
-
-	tea "github.com/charmbracelet/bubbletea"
 )
 
 type event struct {
@@ -16,12 +16,20 @@ type event struct {
 	Location  string `json:"location"`
 	EndTime   string `json:"endTime"`
 }
-
 type model struct {
 	events   []event
 	cursor   int
 	selected map[int]struct{}
 }
+
+var selected = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("#6495ED"))
+
+var whiteText = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("#FAFAFA"))
+
+var redText = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("#FF0000"))
 
 func init() {
 	SpinUp()
@@ -68,9 +76,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	s := "Here are ye events\n\n"
+	s := whiteText.Render("Ye welp here are ye events")
+	s += "\n\n"
 
-	for i, choice := range m.events {
+	for i, event := range m.events {
 		cursor := " "
 		if m.cursor == i {
 			cursor = ">"
@@ -78,11 +87,15 @@ func (m model) View() string {
 		checked := " "
 		if _, ok := m.selected[i]; ok {
 			checked = "x"
+			s += selected.Render(fmt.Sprintf("%s [%s] %s", cursor, checked, event.Location))
+		} else {
+			s += whiteText.Render(fmt.Sprintf("%s [%s] %s", cursor, checked, event.Title))
 		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
+		s += "\n"
 	}
-	s += "\nPress q to quit.\n"
+	s += "\n"
+	s += redText.Render("Press q to quit.")
+	s += "\n"
 
 	return s
 }
@@ -97,7 +110,6 @@ func main() {
 	}
 
 }
-
 func getEvents() []event {
 	res, err := http.Get("http://localhost:8080/calendar/events")
 	if err != nil {
@@ -120,7 +132,6 @@ func getEvents() []event {
 	}
 	return events
 }
-
 func refreshOauth() {
 	_, err := http.Post("http://localhost:8080/admin/refresh", "", nil)
 	if err != nil {
