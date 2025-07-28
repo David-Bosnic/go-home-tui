@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	tea "github.com/charmbracelet/bubbletea"
 	"io"
 	"net/http"
 	"os"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 type event struct {
@@ -87,6 +88,17 @@ func (m model) View() string {
 }
 
 func main() {
+	refreshOauth()
+	events := getEvents()
+	p := tea.NewProgram(initalModal(events))
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Alas, there's been an error: %v", err)
+		os.Exit(1)
+	}
+
+}
+
+func getEvents() []event {
 	res, err := http.Get("http://localhost:8080/calendar/events")
 	if err != nil {
 		fmt.Println(err)
@@ -106,10 +118,13 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	p := tea.NewProgram(initalModal(events))
-	if _, err := p.Run(); err != nil {
-		fmt.Printf("Alas, there's been an error: %v", err)
+	return events
+}
+
+func refreshOauth() {
+	_, err := http.Post("http://localhost:8080/admin/refresh", "", nil)
+	if err != nil {
+		fmt.Println("Error with post req", err)
 		os.Exit(1)
 	}
-
 }
