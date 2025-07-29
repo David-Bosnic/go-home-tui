@@ -38,7 +38,6 @@ var eventStyle = lipgloss.NewStyle().
 
 var hovered = lipgloss.NewStyle().
 	BorderStyle(lipgloss.RoundedBorder()).
-	BorderForeground(lipgloss.Color("#6495ED")).
 	Inherit(eventStyle)
 
 var whiteText = lipgloss.NewStyle().
