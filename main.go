@@ -22,16 +22,6 @@ type model struct {
 	selected map[int]struct{}
 }
 
-var eventStyle = lipgloss.NewStyle().
-	BorderStyle(lipgloss.RoundedBorder()).
-	Foreground(lipgloss.Color("#FAFAFA")).
-	Width(50).
-	Height(2)
-
-var selected = lipgloss.NewStyle().
-	BorderForeground(lipgloss.Color("#6495ED")).
-	Inherit(eventStyle)
-
 var borderStyle = lipgloss.Border{
 	TopLeft:     "╭",
 	TopRight:    "╮",
@@ -39,8 +29,17 @@ var borderStyle = lipgloss.Border{
 	BottomLeft:  "╰",
 }
 
-var selectedBorder = lipgloss.NewStyle().
-	BorderStyle(borderStyle)
+var eventStyle = lipgloss.NewStyle().
+	BorderStyle(borderStyle).
+	Foreground(lipgloss.Color("#FAFAFA")).
+	BorderForeground(lipgloss.Color("#6495ED")).
+	Width(50).
+	Height(2)
+
+var hovered = lipgloss.NewStyle().
+	BorderStyle(lipgloss.RoundedBorder()).
+	BorderForeground(lipgloss.Color("#6495ED")).
+	Inherit(eventStyle)
 
 var whiteText = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("#FAFAFA"))
@@ -97,16 +96,18 @@ func (m model) View() string {
 	s += "\n\n"
 
 	for i, event := range m.events {
-		cursor := " "
 		if m.cursor == i {
-			cursor = ">"
-		}
-		checked := " "
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
-			s += selectedBorder.Render(selected.Render(fmt.Sprintf("%s [%s] %s", cursor, checked, event.Location)))
+			if _, ok := m.selected[i]; ok {
+				s += hovered.Render(fmt.Sprintf("%s", event.Location))
+			} else {
+				s += hovered.Render(fmt.Sprintf("%s", event.Title))
+			}
 		} else {
-			s += eventStyle.Render(fmt.Sprintf("%s [%s] %s", cursor, checked, event.Title))
+			if _, ok := m.selected[i]; ok {
+				s += eventStyle.Render(fmt.Sprintf("%s", event.Location))
+			} else {
+				s += eventStyle.Render(fmt.Sprintf("%s", event.Title))
+			}
 		}
 		s += "\n"
 	}
