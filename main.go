@@ -22,8 +22,25 @@ type model struct {
 	selected map[int]struct{}
 }
 
+var eventStyle = lipgloss.NewStyle().
+	BorderStyle(lipgloss.RoundedBorder()).
+	Foreground(lipgloss.Color("#FAFAFA")).
+	Width(50).
+	Height(2)
+
 var selected = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("#6495ED"))
+	BorderForeground(lipgloss.Color("#6495ED")).
+	Inherit(eventStyle)
+
+var borderStyle = lipgloss.Border{
+	TopLeft:     "╭",
+	TopRight:    "╮",
+	BottomRight: "╯",
+	BottomLeft:  "╰",
+}
+
+var selectedBorder = lipgloss.NewStyle().
+	BorderStyle(borderStyle)
 
 var whiteText = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("#FAFAFA"))
@@ -43,7 +60,7 @@ func initalModal(events []event) model {
 }
 
 func (m model) Init() tea.Cmd {
-	return nil
+	return tea.ClearScreen
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -87,9 +104,9 @@ func (m model) View() string {
 		checked := " "
 		if _, ok := m.selected[i]; ok {
 			checked = "x"
-			s += selected.Render(fmt.Sprintf("%s [%s] %s", cursor, checked, event.Location))
+			s += selectedBorder.Render(selected.Render(fmt.Sprintf("%s [%s] %s", cursor, checked, event.Location)))
 		} else {
-			s += whiteText.Render(fmt.Sprintf("%s [%s] %s", cursor, checked, event.Title))
+			s += eventStyle.Render(fmt.Sprintf("%s [%s] %s", cursor, checked, event.Title))
 		}
 		s += "\n"
 	}
