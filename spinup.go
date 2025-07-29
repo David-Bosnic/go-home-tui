@@ -128,6 +128,7 @@ func SpinUp() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /calendar/events", apiConf.handlerEventsGet)
+	mux.HandleFunc("POST /calendar/events", apiConf.handlerEventsPost)
 	mux.HandleFunc("GET /auth/callback", apiConf.handleOauthCallback)
 	mux.HandleFunc("GET /auth/google", apiConf.startOauthFlow)
 	mux.HandleFunc("POST /admin/refresh", apiConf.refreshAccessTokenPost)
