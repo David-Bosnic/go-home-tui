@@ -15,6 +15,7 @@ func (config *apiConfig) handlerEventsGet(w http.ResponseWriter, r *http.Request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("GET /calendar/events Error creating new req %v\n", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 	req.Header.Set("Authorization", config.accessToken)
@@ -27,10 +28,12 @@ func (config *apiConfig) handlerEventsGet(w http.ResponseWriter, r *http.Request
 		weeks, err = strconv.Atoi(weeksParam)
 		if err != nil {
 			log.Printf("GET /calendar/events Error converting weeks to int %v\n", err)
+			http.Error(w, "Invalid weeks parameter: must be a valid integer", http.StatusBadRequest)
 			return
 		}
 		if weeks <= 0 {
 			log.Printf("GET /calendar/events Weeks is %v, weeks needs to be more then 0", weeks)
+			http.Error(w, "Invalid weeks parameter: must be greater than 0", http.StatusBadRequest)
 			return
 		}
 		timeMax = time.Now().AddDate(0, 0, weeks*7).UTC().Format(time.RFC3339)
@@ -44,33 +47,43 @@ func (config *apiConfig) handlerEventsGet(w http.ResponseWriter, r *http.Request
 	q.Add("orderBy", "startTime")
 	q.Add("singleEvents", "true")
 	req.URL.RawQuery = q.Encode()
+
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Printf("GET /calendar/events Error fetching data %v\n", err)
+		http.Error(w, "Failed to fetch calendar data", http.StatusInternalServerError)
 		return
 	}
+	defer res.Body.Close()
+
 	body, err := io.ReadAll(res.Body)
-	res.Body.Close()
-	if res.StatusCode == 401 {
-		w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(401)
+	if err != nil {
+		log.Printf("GET /calendar/events Error reading body %v\n", err)
+		http.Error(w, "Failed to read calendar response", http.StatusInternalServerError)
+		return
+	}
+
+	if res.StatusCode == http.StatusUnauthorized {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Refresh OAuth Secret"))
 		return
 	}
-	if res.StatusCode > 200 {
-		log.Printf("GET /calendar/events Error failed with status code %v\n with body %v\n", res.StatusCode, body)
+
+	if res.StatusCode != http.StatusOK {
+		log.Printf("GET /calendar/events Error failed with status code %v\n with body %v\n", res.StatusCode, string(body))
+		http.Error(w, "Calendar service error", http.StatusBadGateway)
 		return
 	}
-	if err != nil {
-		log.Printf("GET /calendar/events Error reading body %v\n", err)
-		return
-	}
+
 	var calendarEvent CalendarEvent
 	err = json.Unmarshal(body, &calendarEvent)
 	if err != nil {
 		log.Printf("GET /calendar/events Error unmarshaling body %v\n", err)
+		http.Error(w, "Failed to parse calendar response", http.StatusInternalServerError)
 		return
 	}
+
 	var events []event
 	for _, item := range calendarEvent.Items {
 		events = append(events, event{
@@ -80,14 +93,12 @@ func (config *apiConfig) handlerEventsGet(w http.ResponseWriter, r *http.Request
 			Location:  item.Location,
 		})
 	}
-	dat, err := json.Marshal(events)
-	if err != nil {
-		log.Printf("Error marshaling chirps JSON: %s", err)
-		w.Write(dat)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(events); err != nil {
+		log.Printf("GET /calendar/events Error encoding response JSON: %v\n", err)
 		return
 	}
-
-	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(200)
-	w.Write(dat)
 }
