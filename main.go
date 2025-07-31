@@ -119,12 +119,13 @@ func (m model) View() string {
 
 func main() {
 	refreshOauth()
-	events := getEvents()
-	p := tea.NewProgram(initalModal(events))
-	if _, err := p.Run(); err != nil {
-		fmt.Printf("Alas, there's been an error: %v", err)
-		os.Exit(1)
-	}
+	postEvent()
+	// events := getEvents()
+	// p := tea.NewProgram(initalModal(events))
+	// if _, err := p.Run(); err != nil {
+	// 	fmt.Printf("Alas, there's been an error: %v", err)
+	// 	os.Exit(1)
+	// }
 
 }
 func getEvents() []event {
@@ -148,6 +149,13 @@ func getEvents() []event {
 		os.Exit(1)
 	}
 	return events
+}
+func postEvent() {
+	_, err := http.Post("http://localhost:8080/calendar/events", "", nil)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 func refreshOauth() {
 	_, err := http.Post("http://localhost:8080/admin/refresh", "", nil)
