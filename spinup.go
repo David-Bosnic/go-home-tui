@@ -36,11 +36,11 @@ type CalendarEvent struct {
 		Creator     struct {
 			Email string `json:"email"`
 			Self  bool   `json:"self"`
-		} `json:"creator,omitempty"`
+		} `json:"creator"`
 		Organizer struct {
 			Email string `json:"email"`
 			Self  bool   `json:"self"`
-		} `json:"organizer,omitempty"`
+		} `json:"organizer"`
 		Start struct {
 			DateTime string `json:"dateTime"`
 			TimeZone string `json:"timeZone"`
@@ -66,14 +66,8 @@ type CalendarEvent struct {
 		Source struct {
 			URL   string `json:"url"`
 			Title string `json:"title"`
-		} `json:"source,omitempty"`
-		EventType string `json:"eventType"`
-		Creator0  struct {
-			Email string `json:"email"`
-		} `json:"creator,omitempty"`
-		Organizer0 struct {
-			Email string `json:"email"`
-		} `json:"organizer,omitempty"`
+		} `json:"source"`
+		EventType      string `json:"eventType"`
 		ConferenceData struct {
 			EntryPoints []struct {
 				EntryPointType string `json:"entryPointType"`
@@ -89,7 +83,7 @@ type CalendarEvent struct {
 				IconURI string `json:"iconUri"`
 			} `json:"conferenceSolution"`
 			ConferenceID string `json:"conferenceId"`
-		} `json:"conferenceData,omitempty"`
+		} `json:"conferenceData"`
 	} `json:"items"`
 }
 

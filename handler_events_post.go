@@ -20,7 +20,7 @@ type PostEvent struct {
 	} `json:"end"`
 }
 
-func (config *apiConfig) handlerEventsPost(w http.ResponseWriter, r *http.Request) {
+func (config *apiConfig) handlerEventsPost(w http.ResponseWriter, r *http.Request) *http.Response {
 	url := fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/%s/events", config.calendarID)
 	newEvent := PostEvent{
 		Summary: "Test Event",
@@ -32,19 +32,20 @@ func (config *apiConfig) handlerEventsPost(w http.ResponseWriter, r *http.Reques
 	out, err := json.Marshal(newEvent)
 	if err != nil {
 		log.Printf("POST /calendar/events Error marshaling event %v\n", err)
-		return
+		return nil
 	}
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(out))
 	if err != nil {
 		log.Printf("POST /calendar/events Error creating new req %v\n", err)
-		return
+		return nil
 	}
 	fmt.Printf("\nHere is the payload %v\n\n", req)
 	req.Header.Set("Authorization", config.accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Printf("GET /calendar/events Error fetching data %v\n", err)
-		return
+		log.Printf("POST /calendar/events Error making request %v\n", err)
+		return nil
 	}
-	fmt.Println(res)
+	//TODO: Make cleaner endpoint response. Endpoints are not equal in format
+	return res
 }

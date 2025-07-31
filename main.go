@@ -119,13 +119,13 @@ func (m model) View() string {
 
 func main() {
 	refreshOauth()
+	events := getEvents()
+	p := tea.NewProgram(initalModal(events))
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Alas, there's been an error: %v", err)
+		os.Exit(1)
+	}
 	postEvent()
-	// events := getEvents()
-	// p := tea.NewProgram(initalModal(events))
-	// if _, err := p.Run(); err != nil {
-	// 	fmt.Printf("Alas, there's been an error: %v", err)
-	// 	os.Exit(1)
-	// }
 
 }
 func getEvents() []event {
