@@ -101,8 +101,7 @@ func (m model) View() string {
 			if _, ok := m.selected[i]; ok {
 				s += eventStyle.Render(fmt.Sprintf("%s", event.Location))
 			} else {
-				s += eventStyle.Render(fmt.Sprintf("%s", event.Title))
-
+				s += eventStyle.Render(fmt.Sprintf("%d %s", dateToIndex(event.Date), event.Title))
 			}
 		}
 		s += "\n"
@@ -161,9 +160,22 @@ func refreshOauth() {
 }
 
 func dateToIndex(date string) int {
-	currentDate := time.Now().Format("2006-01-02")
-	if date == currentDate {
-		return 0
+	targetDate, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		return -1
 	}
-	return -1
+
+	now := time.Now()
+	currentDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+	targetDate = time.Date(targetDate.Year(), targetDate.Month(), targetDate.Day(), 0, 0, 0, 0, now.Location())
+
+	diff := targetDate.Sub(currentDate)
+	days := int(diff.Hours() / 24)
+
+	if days < 0 || days > 7 {
+		return -1
+	}
+
+	return days
 }
