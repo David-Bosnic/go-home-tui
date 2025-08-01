@@ -84,7 +84,7 @@ func (config *apiConfig) handlerEventsGet(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var events []event
+	var events []Event
 	for _, item := range calendarEvent.Items {
 		parsedTimeStart, err := time.Parse(time.RFC3339, item.Start.DateTime)
 		if err != nil {
@@ -97,7 +97,7 @@ func (config *apiConfig) handlerEventsGet(w http.ResponseWriter, r *http.Request
 			http.Error(w, "Failed to parse calendar time", http.StatusInternalServerError)
 		}
 
-		events = append(events, event{
+		events = append(events, Event{
 			Title:     item.Summary,
 			Date:      parsedTimeStart.Format("2006-01-02"),
 			StartTime: parsedTimeStart.Format("15:04:05"),
@@ -111,6 +111,7 @@ func (config *apiConfig) handlerEventsGet(w http.ResponseWriter, r *http.Request
 
 	if err := json.NewEncoder(w).Encode(events); err != nil {
 		log.Printf("GET /calendar/events Error encoding response JSON: %v\n", err)
+
 		return
 	}
 }

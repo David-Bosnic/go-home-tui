@@ -12,7 +12,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type event struct {
+type Event struct {
 	Title     string `json:"title"`
 	StartTime string `json:"startTime"`
 	Date      string `json:"date"`
@@ -20,12 +20,12 @@ type event struct {
 	EndTime   string `json:"endTime"`
 }
 type model struct {
-	events   []event
+	events   []Event
 	cursor   int
 	selected map[int]struct{}
 }
 
-var eventStyle = lipgloss.NewStyle().
+var cardEventStyle = lipgloss.NewStyle().
 	Border(lipgloss.RoundedBorder(), true, true, false, true).
 	Width(20).
 	Height(1)
@@ -34,7 +34,7 @@ var hovered = lipgloss.NewStyle().
 	Height(8).
 	BorderBottom(true).
 	BorderForeground(lipgloss.Color("#6495ED")).
-	Inherit(eventStyle)
+	Inherit(cardEventStyle)
 
 var whiteText = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("#FAFAFA"))
@@ -46,7 +46,7 @@ func init() {
 	SpinUp()
 }
 
-func initalModal(events []event) model {
+func initalModal(events []Event) model {
 	return model{
 		events:   events,
 		selected: make(map[int]struct{}),
@@ -89,25 +89,49 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	s := whiteText.Render("Ye welp here are ye events")
 	s += "\n\n"
+	rows := eventRowCount(m.events)
+	cols := 6
+	matrix := make([][]Event, rows)
+	for i := range matrix {
+		matrix[i] = make([]Event, cols)
+	}
 
-	for i, event := range m.events {
-		if m.cursor == i {
-			if _, ok := m.selected[i]; ok {
-				s += hovered.Render(fmt.Sprintf("%s", event.Location))
-			} else {
-				s += hovered.Render(fmt.Sprintf("%s @ %s", event.Title, event.StartTime))
-			}
+	currRow := 0
+	currCol := 0
+	for _, event := range m.events {
+		if dateToIndex(event.Date) == currRow || currRow == len(matrix) {
+			matrix[currRow][currCol] = event
+			currCol++
 		} else {
-			if _, ok := m.selected[i]; ok {
-				s += eventStyle.Render(fmt.Sprintf("%s", event.Location))
-			} else {
-				s += eventStyle.Render(fmt.Sprintf("%d %s", dateToIndex(event.Date), event.Title))
+			currRow++
+			matrix[currRow][currCol] = event
+			currCol++
+		}
+	}
+	for _, row := range matrix {
+		for _, value := range row {
+			if value.Title == "" {
+				continue
 			}
+			s += "hi"
 		}
 		s += "\n"
 	}
-	s += "\n"
-
+	// 	if m.cursor == i {
+	// 		if _, ok := m.selected[i]; ok {
+	// 			s += hovered.Render(fmt.Sprintf("%s", event.Location))
+	// 		} else {
+	// 			s += hovered.Render(fmt.Sprintf("%s @ %s", event.Title, event.StartTime))
+	// 		}
+	// 	} else {
+	// 		if _, ok := m.selected[i]; ok {
+	// 			s += eventStyle.Render(fmt.Sprintf("%s", event.Location))
+	// 		} else {
+	// 			s += eventStyle.Render(fmt.Sprintf("%d %s", dateToIndex(event.Date), event.Title))
+	// 		}
+	// 	}
+	// 	s += "\n"
+	// s += "\n"
 	return s
 }
 
@@ -122,7 +146,7 @@ func main() {
 	// postEvent()
 
 }
-func getEvents() []event {
+func getEvents() []Event {
 	res, err := http.Get("http://localhost:8080/calendar/events")
 	if err != nil {
 		fmt.Println(err)
@@ -136,7 +160,7 @@ func getEvents() []event {
 		os.Exit(1)
 	}
 
-	var events []event
+	var events []Event
 	err = json.Unmarshal(body, &events)
 	if err != nil {
 		fmt.Println(err)
@@ -157,6 +181,18 @@ func refreshOauth() {
 		fmt.Println("Error with post req", err)
 		os.Exit(1)
 	}
+}
+
+func eventRowCount(events []Event) int {
+	countMap := make(map[int]int)
+	maxCount := 0
+	for _, event := range events {
+		countMap[dateToIndex(event.Date)]++
+		if countMap[dateToIndex(event.Date)] > maxCount {
+			maxCount++
+		}
+	}
+	return maxCount
 }
 
 func dateToIndex(date string) int {
