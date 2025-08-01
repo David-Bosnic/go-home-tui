@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -100,11 +101,8 @@ func (m model) View() string {
 			if _, ok := m.selected[i]; ok {
 				s += eventStyle.Render(fmt.Sprintf("%s", event.Location))
 			} else {
-				if i == len(m.events)-1 {
-					s += eventStyle.Render(fmt.Sprintf("%s", event.Title))
-				} else {
-					s += eventStyle.Render(fmt.Sprintf("%s", event.Title))
-				}
+				s += eventStyle.Render(fmt.Sprintf("%s", event.Title))
+
 			}
 		}
 		s += "\n"
@@ -160,4 +158,12 @@ func refreshOauth() {
 		fmt.Println("Error with post req", err)
 		os.Exit(1)
 	}
+}
+
+func dateToIndex(date string) int {
+	currentDate := time.Now().Format("2006-01-02")
+	if date == currentDate {
+		return 0
+	}
+	return -1
 }
