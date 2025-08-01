@@ -14,6 +14,7 @@ import (
 type event struct {
 	Title     string `json:"title"`
 	StartTime string `json:"startTime"`
+	Date      string `json:"date"`
 	Location  string `json:"location"`
 	EndTime   string `json:"endTime"`
 }
@@ -23,23 +24,15 @@ type model struct {
 	selected map[int]struct{}
 }
 
-var borderStyle = lipgloss.Border{
-	TopLeft:     "╭",
-	TopRight:    "╮",
-	BottomRight: "╯",
-	BottomLeft:  "╰",
-}
-
 var eventStyle = lipgloss.NewStyle().
 	Border(lipgloss.RoundedBorder(), true, true, false, true).
-	Foreground(lipgloss.Color("#FAFAFA")).
-	BorderForeground(lipgloss.Color("#6495ED")).
-	Background(lipgloss.Color("1")).
-	Width(50).
-	Height(3)
+	Width(20).
+	Height(1)
 
 var hovered = lipgloss.NewStyle().
-	// BorderStyle(lipgloss.RoundedBorder()).
+	Height(8).
+	BorderBottom(true).
+	BorderForeground(lipgloss.Color("#6495ED")).
 	Inherit(eventStyle)
 
 var whiteText = lipgloss.NewStyle().
@@ -97,7 +90,6 @@ func (m model) View() string {
 	s += "\n\n"
 
 	for i, event := range m.events {
-		// s += cardStyle.Render(fmt.Sprintf("%v %s\n", i, event.Title))
 		if m.cursor == i {
 			if _, ok := m.selected[i]; ok {
 				s += hovered.Render(fmt.Sprintf("%s", event.Location))
@@ -108,13 +100,15 @@ func (m model) View() string {
 			if _, ok := m.selected[i]; ok {
 				s += eventStyle.Render(fmt.Sprintf("%s", event.Location))
 			} else {
-				s += eventStyle.Render(fmt.Sprintf("%s", event.Title))
+				if i == len(m.events)-1 {
+					s += eventStyle.Render(fmt.Sprintf("%s", event.Title))
+				} else {
+					s += eventStyle.Render(fmt.Sprintf("%s", event.Title))
+				}
 			}
 		}
 		s += "\n"
 	}
-	s += "\n"
-	s += redText.Render("Press q to quit.")
 	s += "\n"
 
 	return s
@@ -128,7 +122,7 @@ func main() {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
-	postEvent()
+	// postEvent()
 
 }
 func getEvents() []event {
