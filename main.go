@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"io"
 	"net/http"
 	"os"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type event struct {
@@ -30,14 +31,15 @@ var borderStyle = lipgloss.Border{
 }
 
 var eventStyle = lipgloss.NewStyle().
-	BorderStyle(borderStyle).
+	Border(lipgloss.RoundedBorder(), true, true, false, true).
 	Foreground(lipgloss.Color("#FAFAFA")).
 	BorderForeground(lipgloss.Color("#6495ED")).
+	Background(lipgloss.Color("1")).
 	Width(50).
-	Height(2)
+	Height(3)
 
 var hovered = lipgloss.NewStyle().
-	BorderStyle(lipgloss.RoundedBorder()).
+	// BorderStyle(lipgloss.RoundedBorder()).
 	Inherit(eventStyle)
 
 var whiteText = lipgloss.NewStyle().
@@ -95,11 +97,12 @@ func (m model) View() string {
 	s += "\n\n"
 
 	for i, event := range m.events {
+		// s += cardStyle.Render(fmt.Sprintf("%v %s\n", i, event.Title))
 		if m.cursor == i {
 			if _, ok := m.selected[i]; ok {
 				s += hovered.Render(fmt.Sprintf("%s", event.Location))
 			} else {
-				s += hovered.Render(fmt.Sprintf("%s", event.Title))
+				s += hovered.Render(fmt.Sprintf("%s @ %s", event.Title, event.StartTime))
 			}
 		} else {
 			if _, ok := m.selected[i]; ok {
