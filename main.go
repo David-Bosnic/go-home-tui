@@ -27,8 +27,8 @@ type model struct {
 
 var cardEventStyle = lipgloss.NewStyle().
 	Border(lipgloss.RoundedBorder(), true, true, false, true).
-	Width(20).
-	Height(1)
+	Width(10).
+	Height(3)
 
 var hovered = lipgloss.NewStyle().
 	Height(8).
@@ -90,47 +90,63 @@ func (m model) View() string {
 	s := whiteText.Render("Ye welp here are ye events")
 	s += "\n\n"
 	rows := eventRowCount(m.events)
-	cols := 6
-	matrix := make([][]Event, rows)
-	for i := range matrix {
-		matrix[i] = make([]Event, cols)
+	cols := 7
+	eventMatrix := make([][]Event, rows)
+	for i := range eventMatrix {
+		eventMatrix[i] = make([]Event, cols)
 	}
 
-	currRow := 0
-	currCol := 0
+	dayMap := make(map[int]int)
+
 	for _, event := range m.events {
-		if dateToIndex(event.Date) == currRow || currRow == len(matrix) {
-			matrix[currRow][currCol] = event
-			currCol++
-		} else {
-			currRow++
-			matrix[currRow][currCol] = event
-			currCol++
-		}
+		eventIndex := dateToIndex(event.Date)
+		eventMatrix[dayMap[eventIndex]][eventIndex] = event
+		dayMap[eventIndex]++
 	}
-	for _, row := range matrix {
-		for _, value := range row {
-			if value.Title == "" {
-				continue
+	// Tabs
+	// {
+	// 	row := lipgloss.JoinHorizontal(
+	// 		lipgloss.Top,
+	// 		activeTab.Render("Lip Gloss"),
+	// 		tab.Render("Blush"),
+	// 		tab.Render("Eye Shadow"),
+	// 		tab.Render("Mascara"),
+	// 		tab.Render("Foundation"),
+	// 	)
+	// 	gap := tabGap.Render(strings.Repeat(" ", max(0, width-lipgloss.Width(row)-2)))
+	// 	row = lipgloss.JoinHorizontal(lipgloss.Bottom, row, gap)
+	// 	doc.WriteString(row + "\n\n")
+	// }
+
+	for _, rows := range eventMatrix {
+		rowEvents := []string{}
+		for _, event := range rows {
+			if event.Title == "" {
+				rowEvents = append(rowEvents, cardEventStyle.Render(event.Title))
+			} else {
+				rowEvents = append(rowEvents, cardEventStyle.Render(event.Title))
 			}
-			s += "hi"
 		}
+		s += lipgloss.JoinHorizontal(
+			lipgloss.Top,
+			rowEvents...,
+		)
 		s += "\n"
 	}
-	// 	if m.cursor == i {
-	// 		if _, ok := m.selected[i]; ok {
-	// 			s += hovered.Render(fmt.Sprintf("%s", event.Location))
-	// 		} else {
-	// 			s += hovered.Render(fmt.Sprintf("%s @ %s", event.Title, event.StartTime))
-	// 		}
+
+	// if m.cursor == i {
+	// 	if _, ok := m.selected[i]; ok {
+	// 		s += hovered.Render(fmt.Sprintf("%s", event.Location))
 	// 	} else {
-	// 		if _, ok := m.selected[i]; ok {
-	// 			s += eventStyle.Render(fmt.Sprintf("%s", event.Location))
-	// 		} else {
-	// 			s += eventStyle.Render(fmt.Sprintf("%d %s", dateToIndex(event.Date), event.Title))
-	// 		}
+	// 		s += hovered.Render(fmt.Sprintf("%s @ %s", event.Title, event.StartTime))
 	// 	}
-	// 	s += "\n"
+	// } else {
+	// 	if _, ok := m.selected[i]; ok {
+	// 		s += cardEventStyle.Render(fmt.Sprintf("%s", event.Location))
+	// 	} else {
+	// 		s += cardEventStyle.Render(fmt.Sprintf("%d %s", dateToIndex(event.Date), event.Title))
+	// 	}
+	// }
 	// s += "\n"
 	return s
 }
