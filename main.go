@@ -27,8 +27,15 @@ type model struct {
 
 var cardEventStyle = lipgloss.NewStyle().
 	Border(lipgloss.RoundedBorder(), true, true, false, true).
+	Align(lipgloss.Center).
 	Width(10).
 	Height(3)
+
+var dayStyle = lipgloss.NewStyle().
+	Border(lipgloss.RoundedBorder()).
+	Width(10).
+	Align(lipgloss.Center).
+	Height(1)
 
 var hovered = lipgloss.NewStyle().
 	Height(8).
@@ -117,6 +124,18 @@ func (m model) View() string {
 	// 	row = lipgloss.JoinHorizontal(lipgloss.Bottom, row, gap)
 	// 	doc.WriteString(row + "\n\n")
 	// }
+
+	s += lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		dayStyle.Render("Mon "),
+		dayStyle.Render("Tue "),
+		dayStyle.Render("Wed "),
+		dayStyle.Render("Thu "),
+		dayStyle.Render("Fri "),
+		dayStyle.Render("Sat "),
+		dayStyle.Render("Sun "),
+	)
+	s += "\n"
 
 	for _, rows := range eventMatrix {
 		rowEvents := []string{}
