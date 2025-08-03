@@ -32,10 +32,9 @@ var cardEventStyle = lipgloss.NewStyle().
 	Height(3)
 
 var dayStyle = lipgloss.NewStyle().
-	Border(lipgloss.RoundedBorder()).
-	Width(10).
-	Align(lipgloss.Center).
-	Height(1)
+	PaddingRight(5).
+	PaddingLeft(4).
+	Align(lipgloss.Center)
 
 var hovered = lipgloss.NewStyle().
 	Height(8).
@@ -125,15 +124,13 @@ func (m model) View() string {
 	// 	doc.WriteString(row + "\n\n")
 	// }
 
+	styledDays := getDaysStartingToday()
+	for i := range styledDays {
+		styledDays[i] = dayStyle.Render(styledDays[i])
+	}
 	s += lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		dayStyle.Render("Mon "),
-		dayStyle.Render("Tue "),
-		dayStyle.Render("Wed "),
-		dayStyle.Render("Thu "),
-		dayStyle.Render("Fri "),
-		dayStyle.Render("Sat "),
-		dayStyle.Render("Sun "),
+		styledDays...,
 	)
 	s += "\n"
 
@@ -228,6 +225,19 @@ func eventRowCount(events []Event) int {
 		}
 	}
 	return maxCount
+}
+func getDaysStartingToday() []string {
+	allDays := []string{
+		"Sun",
+		"Mon",
+		"Tue",
+		"Wed",
+		"Thu",
+		"Fri",
+		"Sat",
+	}
+	today := int(time.Now().Weekday())
+	return append(allDays[today:], allDays[:today]...)
 }
 
 func dateToIndex(date string) int {
