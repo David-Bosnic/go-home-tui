@@ -36,6 +36,17 @@ var dayStyle = lipgloss.NewStyle().
 	PaddingLeft(4).
 	Align(lipgloss.Center)
 
+var emptyEventStyle = lipgloss.NewStyle().
+	PaddingRight(8).
+	PaddingLeft(4).
+	Align(lipgloss.Center)
+
+var addEventStyle = lipgloss.NewStyle().
+	Border(lipgloss.RoundedBorder(), true, true, false, true).
+	Width(10).
+	Height(1).
+	Align(lipgloss.Center)
+
 var hovered = lipgloss.NewStyle().
 	Height(8).
 	BorderBottom(true).
@@ -109,20 +120,6 @@ func (m model) View() string {
 		eventMatrix[dayMap[eventIndex]][eventIndex] = event
 		dayMap[eventIndex]++
 	}
-	// Tabs
-	// {
-	// 	row := lipgloss.JoinHorizontal(
-	// 		lipgloss.Top,
-	// 		activeTab.Render("Lip Gloss"),
-	// 		tab.Render("Blush"),
-	// 		tab.Render("Eye Shadow"),
-	// 		tab.Render("Mascara"),
-	// 		tab.Render("Foundation"),
-	// 	)
-	// 	gap := tabGap.Render(strings.Repeat(" ", max(0, width-lipgloss.Width(row)-2)))
-	// 	row = lipgloss.JoinHorizontal(lipgloss.Bottom, row, gap)
-	// 	doc.WriteString(row + "\n\n")
-	// }
 
 	styledDays := getDaysStartingToday()
 	for i := range styledDays {
@@ -134,11 +131,22 @@ func (m model) View() string {
 	)
 	s += "\n"
 
+	addEventCards := make([]string, 7)
+	for i := range addEventCards {
+		addEventCards[i] = addEventStyle.Render("+")
+	}
+
+	s += lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		addEventCards...,
+	)
+	s += "\n"
+
 	for _, rows := range eventMatrix {
 		rowEvents := []string{}
 		for _, event := range rows {
 			if event.Title == "" {
-				rowEvents = append(rowEvents, cardEventStyle.Render(event.Title))
+				rowEvents = append(rowEvents, emptyEventStyle.Render(""))
 			} else {
 				rowEvents = append(rowEvents, cardEventStyle.Render(event.Title))
 			}
