@@ -19,25 +19,22 @@ type Event struct {
 	Location  string `json:"location"`
 	EndTime   string `json:"endTime"`
 }
-type model struct {
-	events   []Event
-	cursor   int
-	selected map[int]struct{}
+
+type Point struct {
+	x int
+	y int
 }
 
-var cardEventStyle = lipgloss.NewStyle().
-	Border(lipgloss.RoundedBorder(), true, true, false, true).
-	Align(lipgloss.Center).
-	Width(10).
-	Height(3)
+type Model struct {
+	events []Event
+	cursor Point
+	point  Point
+
+	selected map[Point]struct{}
+}
 
 var dayStyle = lipgloss.NewStyle().
 	PaddingRight(5).
-	PaddingLeft(4).
-	Align(lipgloss.Center)
-
-var emptyEventStyle = lipgloss.NewStyle().
-	PaddingRight(8).
 	PaddingLeft(4).
 	Align(lipgloss.Center)
 
@@ -46,6 +43,29 @@ var addEventStyle = lipgloss.NewStyle().
 	Width(10).
 	Height(1).
 	Align(lipgloss.Center)
+
+var cardEventStyle = lipgloss.NewStyle().
+	Border(lipgloss.RoundedBorder(), true, true, false, true).
+	Align(lipgloss.Center).
+	Width(10).
+	Height(3)
+
+var emptyEventStyle = lipgloss.NewStyle().
+	PaddingRight(8).
+	PaddingLeft(4).
+	Align(lipgloss.Center)
+
+var hoverAddEventStyle = lipgloss.NewStyle().
+	BorderForeground(lipgloss.Color("#6495ED")).
+	Inherit(addEventStyle)
+
+var hoverCardEventStyle = lipgloss.NewStyle().
+	BorderForeground(lipgloss.Color("#6495ED")).
+	Inherit(cardEventStyle)
+
+var hoverEmptyEventStyle = lipgloss.NewStyle().
+	BorderForeground(lipgloss.Color("#6495ED")).
+	Inherit(emptyEventStyle)
 
 var hovered = lipgloss.NewStyle().
 	Height(8).
@@ -63,18 +83,18 @@ func init() {
 	SpinUp()
 }
 
-func initalModal(events []Event) model {
-	return model{
+func initalModal(events []Event) Model {
+	return Model{
 		events:   events,
-		selected: make(map[int]struct{}),
+		selected: make(map[Point]struct{}),
 	}
 }
 
-func (m model) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return tea.ClearScreen
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -82,39 +102,48 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
+			if m.cursor.y > 0 {
+				m.cursor.y--
 			}
 
 		case "down", "j":
-			if m.cursor < len(m.events)-1 {
-				m.cursor++
+			if m.cursor.y < len(m.events)-1 {
+				m.cursor.y++
+			}
+		case "left", "h":
+			if m.cursor.x > 0 {
+				m.cursor.x--
+			}
+
+		case "right", "l":
+			if m.cursor.x < 7 {
+				m.cursor.x++
 			}
 
 		case " ", "enter":
-			_, ok := m.selected[m.cursor]
+			_, ok := m.selected[Point{x: m.cursor.x, y: m.cursor.y}]
 			if ok {
-				delete(m.selected, m.cursor)
+				delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
 			} else {
-				m.selected[m.cursor] = struct{}{}
+				m.selected[Point{x: m.cursor.x, y: m.cursor.y}] = struct{}{}
 			}
 		}
 	}
 	return m, nil
 }
 
-func (m model) View() string {
+func (m Model) View() string {
 	s := whiteText.Render("Ye welp here are ye events")
 	s += "\n\n"
 	rows := eventRowCount(m.events)
 	cols := 7
 	eventMatrix := make([][]Event, rows)
+
 	for i := range eventMatrix {
 		eventMatrix[i] = make([]Event, cols)
 	}
 
 	dayMap := make(map[int]int)
-
 	for _, event := range m.events {
 		eventIndex := dateToIndex(event.Date)
 		eventMatrix[dayMap[eventIndex]][eventIndex] = event
@@ -131,29 +160,39 @@ func (m model) View() string {
 	)
 	s += "\n"
 
-	addEventCards := make([]string, 7)
+	addEventCards := make([]Event, 7)
 	for i := range addEventCards {
-		addEventCards[i] = addEventStyle.Render("+")
+		addEventCards[i].Title = "+"
 	}
-
-	s += lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		addEventCards...,
-	)
-	s += "\n"
-
-	for _, rows := range eventMatrix {
-		rowEvents := []string{}
-		for _, event := range rows {
-			if event.Title == "" {
-				rowEvents = append(rowEvents, emptyEventStyle.Render(""))
+	eventMatrix = append([][]Event{addEventCards}, eventMatrix...)
+	for i, rows := range eventMatrix {
+		rowEventsTitle := []string{}
+		for j, event := range rows {
+			currentPoint := Point{x: j, y: i}
+			if m.cursor == currentPoint {
+				switch event.Title {
+				case "":
+					rowEventsTitle = append(rowEventsTitle, hoverEmptyEventStyle.Render(""))
+				case "+":
+					rowEventsTitle = append(rowEventsTitle, hoverAddEventStyle.Render(event.Title))
+				default:
+					rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Title))
+				}
 			} else {
-				rowEvents = append(rowEvents, cardEventStyle.Render(event.Title))
+				switch event.Title {
+				case "":
+					rowEventsTitle = append(rowEventsTitle, emptyEventStyle.Render(""))
+				case "+":
+					rowEventsTitle = append(rowEventsTitle, addEventStyle.Render(event.Title))
+				default:
+					rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(event.Title))
+				}
+
 			}
 		}
 		s += lipgloss.JoinHorizontal(
 			lipgloss.Top,
-			rowEvents...,
+			rowEventsTitle...,
 		)
 		s += "\n"
 	}
