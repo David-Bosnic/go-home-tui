@@ -26,11 +26,11 @@ type Point struct {
 }
 
 type Model struct {
-	events []Event
-	cursor Point
-	point  Point
-
-	selected map[Point]struct{}
+	events    []Event
+	cursor    Point
+	point     Point
+	selected  map[Point]struct{}
+	currEvent Event
 }
 
 var dayStyle = lipgloss.NewStyle().
@@ -125,6 +125,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if ok {
 				delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
 			} else {
+
 				m.selected[Point{x: m.cursor.x, y: m.cursor.y}] = struct{}{}
 			}
 		}
@@ -174,18 +175,19 @@ func (m Model) View() string {
 				case "":
 					rowEventsTitle = append(rowEventsTitle, hoverEmptyEventStyle.Render(""))
 				case "+":
-					rowEventsTitle = append(rowEventsTitle, hoverAddEventStyle.Render(event.Title))
+					rowEventsTitle = append(rowEventsTitle, hoverAddEventStyle.Render(truncateWithEllipsis(event.Title, 19)))
 				default:
-					rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Title))
+					rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(truncateWithEllipsis(event.Title, 19)))
 				}
+				continue
 			} else {
 				switch event.Title {
 				case "":
 					rowEventsTitle = append(rowEventsTitle, emptyEventStyle.Render(""))
 				case "+":
-					rowEventsTitle = append(rowEventsTitle, addEventStyle.Render(event.Title))
+					rowEventsTitle = append(rowEventsTitle, addEventStyle.Render(truncateWithEllipsis(event.Title, 19)))
 				default:
-					rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(event.Title))
+					rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(truncateWithEllipsis(event.Title, 19)))
 				}
 
 			}
@@ -196,21 +198,6 @@ func (m Model) View() string {
 		)
 		s += "\n"
 	}
-
-	// if m.cursor == i {
-	// 	if _, ok := m.selected[i]; ok {
-	// 		s += hovered.Render(fmt.Sprintf("%s", event.Location))
-	// 	} else {
-	// 		s += hovered.Render(fmt.Sprintf("%s @ %s", event.Title, event.StartTime))
-	// 	}
-	// } else {
-	// 	if _, ok := m.selected[i]; ok {
-	// 		s += cardEventStyle.Render(fmt.Sprintf("%s", event.Location))
-	// 	} else {
-	// 		s += cardEventStyle.Render(fmt.Sprintf("%d %s", dateToIndex(event.Date), event.Title))
-	// 	}
-	// }
-	// s += "\n"
 	return s
 }
 
@@ -306,4 +293,11 @@ func dateToIndex(date string) int {
 	}
 
 	return days
+}
+
+func truncateWithEllipsis(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen-3] + "..."
 }
