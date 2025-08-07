@@ -35,25 +35,25 @@ type Model struct {
 
 // Styles
 var dayStyle = lipgloss.NewStyle().
-	PaddingRight(5).
-	PaddingLeft(4).
+	PaddingRight(7).
+	PaddingLeft(7).
 	Align(lipgloss.Center)
 
 var addEventStyle = lipgloss.NewStyle().
 	Border(lipgloss.RoundedBorder(), true, true, false, true).
-	Width(10).
+	Width(15).
 	Height(1).
 	Align(lipgloss.Center)
 
 var cardEventStyle = lipgloss.NewStyle().
 	Border(lipgloss.RoundedBorder(), true, true, false, true).
 	Align(lipgloss.Center).
-	Width(10).
-	Height(3)
+	Width(15).
+	Height(5)
 
 var emptyEventStyle = lipgloss.NewStyle().
 	PaddingRight(8).
-	PaddingLeft(4).
+	PaddingLeft(9).
 	Align(lipgloss.Center)
 
 var hoverAddEventStyle = lipgloss.NewStyle().
@@ -184,7 +184,12 @@ func (m Model) View() string {
 				case "+":
 					rowEventsTitle = append(rowEventsTitle, hoverAddEventStyle.Render(event.Title))
 				default:
-					rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(truncateWithEllipsis(event.Title, 19)))
+					//TODO: Maybe truncate super long event names
+					if _, ok := m.selected[Point{x: m.cursor.x, y: m.cursor.y}]; ok {
+						rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Location))
+					} else {
+						rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Title))
+					}
 				}
 				continue
 			} else {
