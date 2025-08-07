@@ -133,16 +133,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "down", "j":
-			if m.cursor.y < eventRowCount(m.events) && m.eventMatrix[m.cursor.y][m.cursor.x].Title != "" {
+			if m.cursor.y < eventRowCount(m.events) && m.eventMatrix[m.cursor.y+1][m.cursor.x].Title != "" {
 				m.cursor.y++
 			}
 		case "left", "h":
-			if m.cursor.x < 0 && m.eventMatrix[m.cursor.y][m.cursor.x-1].Title != "" {
+			if m.cursor.x > 0 && m.eventMatrix[m.cursor.y][m.cursor.x-1].Title != "" {
 				m.cursor.x--
 			}
 
 		case "right", "l":
-			if m.cursor.x < 7 && m.eventMatrix[m.cursor.y][m.cursor.x+1].Title != "" {
+			if m.cursor.x < 6 && m.eventMatrix[m.cursor.y][m.cursor.x+1].Title != "" {
 				m.cursor.x++
 			}
 
