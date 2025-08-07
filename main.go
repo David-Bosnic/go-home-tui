@@ -94,6 +94,15 @@ func initialModel(events []Event) Model {
 		eventMatrix[i] = make([]Event, cols)
 	}
 
+	dayMap := make(map[int]int)
+	for _, event := range events {
+		eventIndex := dateToIndex(event.Date)
+		if eventIndex >= 0 && eventIndex < cols && dayMap[eventIndex] < rows {
+			eventMatrix[dayMap[eventIndex]][eventIndex] = event
+			dayMap[eventIndex]++
+		}
+	}
+
 	addEventCards := make([]Event, 7)
 	for i := range addEventCards {
 		addEventCards[i].Title = "+"
@@ -153,14 +162,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	s := whiteText.Render("Current Event: ", m.eventMatrix[m.cursor.y][m.cursor.x].Title)
 	s += "\n\n"
-
-	dayMap := make(map[int]int)
-	//Inverted x and y since we render left to right, top to bottom
-	for _, event := range m.events {
-		eventIndex := dateToIndex(event.Date)
-		m.eventMatrix[dayMap[eventIndex]][eventIndex] = event
-		dayMap[eventIndex]++
-	}
 
 	styledDays := getDaysStartingToday()
 	for i := range styledDays {
