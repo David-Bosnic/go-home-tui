@@ -26,13 +26,14 @@ type Point struct {
 }
 
 type Model struct {
-	events    []Event
-	cursor    Point
-	point     Point
-	selected  map[Point]struct{}
-	currEvent Event
+	events      []Event
+	cursor      Point
+	point       Point
+	selected    map[Point]struct{}
+	eventMatrix [][]Event
 }
 
+// Styles
 var dayStyle = lipgloss.NewStyle().
 	PaddingRight(5).
 	PaddingLeft(4).
@@ -83,10 +84,26 @@ func init() {
 	SpinUp()
 }
 
-func initalModal(events []Event) Model {
+func initialModel(events []Event) Model {
+
+	rows := eventRowCount(events)
+	cols := 7
+	eventMatrix := make([][]Event, rows)
+
+	for i := range eventMatrix {
+		eventMatrix[i] = make([]Event, cols)
+	}
+
+	addEventCards := make([]Event, 7)
+	for i := range addEventCards {
+		addEventCards[i].Title = "+"
+	}
+	eventMatrix = append([][]Event{addEventCards}, eventMatrix...)
+
 	return Model{
-		events:   events,
-		selected: make(map[Point]struct{}),
+		events:      events,
+		selected:    make(map[Point]struct{}),
+		eventMatrix: eventMatrix,
 	}
 }
 
@@ -107,16 +124,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "down", "j":
-			if m.cursor.y < len(m.events)-1 {
+			if m.cursor.y < eventRowCount(m.events) && m.eventMatrix[m.cursor.y][m.cursor.x].Title != "" {
 				m.cursor.y++
 			}
 		case "left", "h":
-			if m.cursor.x > 0 {
+			if m.cursor.x < 0 && m.eventMatrix[m.cursor.y][m.cursor.x-1].Title != "" {
 				m.cursor.x--
 			}
 
 		case "right", "l":
-			if m.cursor.x < 7 {
+			if m.cursor.x < 7 && m.eventMatrix[m.cursor.y][m.cursor.x+1].Title != "" {
 				m.cursor.x++
 			}
 
@@ -134,20 +151,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	s := whiteText.Render("Ye welp here are ye events")
+	s := whiteText.Render("Current Event: ", m.eventMatrix[m.cursor.y][m.cursor.x].Title)
 	s += "\n\n"
-	rows := eventRowCount(m.events)
-	cols := 7
-	eventMatrix := make([][]Event, rows)
-
-	for i := range eventMatrix {
-		eventMatrix[i] = make([]Event, cols)
-	}
 
 	dayMap := make(map[int]int)
+	//Inverted x and y since we render left to right, top to bottom
 	for _, event := range m.events {
 		eventIndex := dateToIndex(event.Date)
-		eventMatrix[dayMap[eventIndex]][eventIndex] = event
+		m.eventMatrix[dayMap[eventIndex]][eventIndex] = event
 		dayMap[eventIndex]++
 	}
 
@@ -161,12 +172,7 @@ func (m Model) View() string {
 	)
 	s += "\n"
 
-	addEventCards := make([]Event, 7)
-	for i := range addEventCards {
-		addEventCards[i].Title = "+"
-	}
-	eventMatrix = append([][]Event{addEventCards}, eventMatrix...)
-	for i, rows := range eventMatrix {
+	for i, rows := range m.eventMatrix {
 		rowEventsTitle := []string{}
 		for j, event := range rows {
 			currentPoint := Point{x: j, y: i}
@@ -175,7 +181,7 @@ func (m Model) View() string {
 				case "":
 					rowEventsTitle = append(rowEventsTitle, hoverEmptyEventStyle.Render(""))
 				case "+":
-					rowEventsTitle = append(rowEventsTitle, hoverAddEventStyle.Render(truncateWithEllipsis(event.Title, 19)))
+					rowEventsTitle = append(rowEventsTitle, hoverAddEventStyle.Render(event.Title))
 				default:
 					rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(truncateWithEllipsis(event.Title, 19)))
 				}
@@ -185,7 +191,7 @@ func (m Model) View() string {
 				case "":
 					rowEventsTitle = append(rowEventsTitle, emptyEventStyle.Render(""))
 				case "+":
-					rowEventsTitle = append(rowEventsTitle, addEventStyle.Render(truncateWithEllipsis(event.Title, 19)))
+					rowEventsTitle = append(rowEventsTitle, addEventStyle.Render((event.Title)))
 				default:
 					rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(truncateWithEllipsis(event.Title, 19)))
 				}
@@ -204,7 +210,7 @@ func (m Model) View() string {
 func main() {
 	refreshOauth()
 	events := getEvents()
-	p := tea.NewProgram(initalModal(events))
+	p := tea.NewProgram(initialModel(events))
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
