@@ -6,8 +6,10 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -31,54 +33,67 @@ type Model struct {
 	point       Point
 	selected    map[Point]struct{}
 	eventMatrix [][]Event
+	mode        string
+	inputs      []textinput.Model
+	focusIndex  int
 }
 
 // Styles
-var dayStyle = lipgloss.NewStyle().
-	PaddingRight(7).
-	PaddingLeft(7).
-	Align(lipgloss.Center)
+var (
+	focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	cursorStyle  = focusedStyle
+	noStyle      = lipgloss.NewStyle()
 
-var addEventStyle = lipgloss.NewStyle().
-	Border(lipgloss.RoundedBorder(), true, true, false, true).
-	Width(15).
-	Height(1).
-	Align(lipgloss.Center)
+	blurredStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	blurredButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Submit"))
+	focusedButton = focusedStyle.Render("[ Submit ]")
 
-var cardEventStyle = lipgloss.NewStyle().
-	Border(lipgloss.RoundedBorder(), true, true, false, true).
-	Align(lipgloss.Center).
-	Width(15).
-	Height(5)
+	dayStyle = lipgloss.NewStyle().
+			PaddingRight(7).
+			PaddingLeft(7).
+			Align(lipgloss.Center)
 
-var emptyEventStyle = lipgloss.NewStyle().
-	PaddingRight(8).
-	PaddingLeft(9).
-	Align(lipgloss.Center)
+	addEventStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder(), true, true, false, true).
+			Width(15).
+			Height(1).
+			Align(lipgloss.Center)
 
-var hoverAddEventStyle = lipgloss.NewStyle().
-	BorderForeground(lipgloss.Color("#6495ED")).
-	Inherit(addEventStyle)
+	cardEventStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder(), true, true, false, true).
+			Align(lipgloss.Center).
+			Width(15).
+			Height(5)
 
-var hoverCardEventStyle = lipgloss.NewStyle().
-	BorderForeground(lipgloss.Color("#6495ED")).
-	Inherit(cardEventStyle)
+	emptyEventStyle = lipgloss.NewStyle().
+			PaddingRight(8).
+			PaddingLeft(9).
+			Align(lipgloss.Center)
 
-var hoverEmptyEventStyle = lipgloss.NewStyle().
-	BorderForeground(lipgloss.Color("#6495ED")).
-	Inherit(emptyEventStyle)
+	hoverAddEventStyle = lipgloss.NewStyle().
+				BorderForeground(lipgloss.Color("#6495ED")).
+				Inherit(addEventStyle)
 
-var hovered = lipgloss.NewStyle().
-	Height(8).
-	BorderBottom(true).
-	BorderForeground(lipgloss.Color("#6495ED")).
-	Inherit(cardEventStyle)
+	hoverCardEventStyle = lipgloss.NewStyle().
+				BorderForeground(lipgloss.Color("#6495ED")).
+				Inherit(cardEventStyle)
 
-var whiteText = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("#FAFAFA"))
+	hoverEmptyEventStyle = lipgloss.NewStyle().
+				BorderForeground(lipgloss.Color("#6495ED")).
+				Inherit(emptyEventStyle)
 
-var redText = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("#FF0000"))
+	hovered = lipgloss.NewStyle().
+		Height(8).
+		BorderBottom(true).
+		BorderForeground(lipgloss.Color("#6495ED")).
+		Inherit(cardEventStyle)
+
+	whiteText = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FAFAFA"))
+
+	redText = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FF0000"))
+)
 
 func init() {
 	SpinUp()
@@ -109,106 +124,216 @@ func initialModel(events []Event) Model {
 	}
 	eventMatrix = append([][]Event{addEventCards}, eventMatrix...)
 
-	return Model{
+	m := Model{
 		events:      events,
 		selected:    make(map[Point]struct{}),
 		eventMatrix: eventMatrix,
+		mode:        "calendar",
+		inputs:      make([]textinput.Model, 3),
 	}
+	var t textinput.Model
+	for i := range m.inputs {
+		t = textinput.New()
+		t.Cursor.Style = cursorStyle
+		t.CharLimit = 32
+
+		switch i {
+		case 0:
+			t.Placeholder = "Nickname"
+			t.Focus()
+			t.PromptStyle = focusedStyle
+			t.TextStyle = focusedStyle
+		case 1:
+			t.Placeholder = "Email"
+			t.CharLimit = 64
+		case 2:
+			t.Placeholder = "Password"
+			t.EchoMode = textinput.EchoPassword
+			t.EchoCharacter = '•'
+		}
+
+		m.inputs[i] = t
+	}
+
+	return m
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.ClearScreen
+	return tea.Batch(tea.ClearScreen, textinput.Blink)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
 
-		case "up", "k":
-			if m.cursor.y > 0 {
-				m.cursor.y--
-			}
+	if m.mode == "calendar" {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "ctrl+c", "q":
+				return m, tea.Quit
 
-		case "down", "j":
-			if m.cursor.y < eventRowCount(m.events) && m.eventMatrix[m.cursor.y+1][m.cursor.x].Title != "" {
-				m.cursor.y++
-			}
-		case "left", "h":
-			if m.cursor.x > 0 && m.eventMatrix[m.cursor.y][m.cursor.x-1].Title != "" {
-				m.cursor.x--
-			}
+			case "up", "k":
+				if m.cursor.y > 0 {
+					m.cursor.y--
+				}
 
-		case "right", "l":
-			if m.cursor.x < 6 && m.eventMatrix[m.cursor.y][m.cursor.x+1].Title != "" {
-				m.cursor.x++
-			}
+			case "down", "j":
+				if m.cursor.y < eventRowCount(m.events) && m.eventMatrix[m.cursor.y+1][m.cursor.x].Title != "" {
+					m.cursor.y++
+				}
+			case "left", "h":
+				if m.cursor.x > 0 && m.eventMatrix[m.cursor.y][m.cursor.x-1].Title != "" {
+					m.cursor.x--
+				}
 
-		case " ", "enter":
-			_, ok := m.selected[Point{x: m.cursor.x, y: m.cursor.y}]
-			if ok {
-				delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
-			} else {
+			case "right", "l":
+				if m.cursor.x < 6 && m.eventMatrix[m.cursor.y][m.cursor.x+1].Title != "" {
+					m.cursor.x++
+				}
 
-				m.selected[Point{x: m.cursor.x, y: m.cursor.y}] = struct{}{}
+			case " ", "enter":
+				_, ok := m.selected[Point{x: m.cursor.x, y: m.cursor.y}]
+				if ok {
+					delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
+				} else {
+					m.mode = "forms"
+					m.focusIndex = 0
+					m.selected[Point{x: m.cursor.x, y: m.cursor.y}] = struct{}{}
+				}
 			}
 		}
 	}
+	if m.mode == "forms" {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "ctrl+c", "q":
+				return m, tea.Quit
+			case "tab", "shift+tab", "enter", "up", "down":
+				s := msg.String()
+				if s == "enter" && m.focusIndex == len(m.inputs) {
+					m.mode = "calendar"
+					return m, nil
+				}
+
+				// Cycle indexes
+				if s == "up" || s == "shift+tab" {
+					m.focusIndex--
+				}
+
+				if s == "down" {
+					m.focusIndex++
+				}
+
+				if m.focusIndex > len(m.inputs) {
+					m.focusIndex = 0
+				} else if m.focusIndex < 0 {
+					m.focusIndex = len(m.inputs)
+				}
+
+				cmds := make([]tea.Cmd, len(m.inputs))
+				for i := 0; i <= len(m.inputs)-1; i++ {
+					if i == m.focusIndex {
+						cmds[i] = m.inputs[i].Focus()
+						m.inputs[i].PromptStyle = focusedStyle
+						m.inputs[i].TextStyle = focusedStyle
+						continue
+					}
+					m.inputs[i].Blur()
+					m.inputs[i].PromptStyle = noStyle
+					m.inputs[i].TextStyle = noStyle
+				}
+
+				return m, tea.Batch(cmds...)
+			}
+			cmd := m.updateInputs(msg)
+			return m, cmd
+		}
+
+	}
 	return m, nil
+
+}
+func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
+	cmds := make([]tea.Cmd, len(m.inputs))
+	for i := range m.inputs {
+		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
+	}
+
+	return tea.Batch(cmds...)
 }
 
 func (m Model) View() string {
-	s := whiteText.Render("Current Event: ", m.eventMatrix[m.cursor.y][m.cursor.x].Title)
-	s += "\n\n"
+	var s string
+	// s += fmt.Sprintln("\nHere is the index", m.focusIndex)
+	// s += fmt.Sprintln("\nHere is the input len", len(m.inputs))
+	if m.mode == "forms" {
 
-	styledDays := getDaysStartingToday()
-	for i := range styledDays {
-		styledDays[i] = dayStyle.Render(styledDays[i])
-	}
-	s += lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		styledDays...,
-	)
-	s += "\n"
-
-	for i, rows := range m.eventMatrix {
-		rowEventsTitle := []string{}
-		for j, event := range rows {
-			currentPoint := Point{x: j, y: i}
-			if m.cursor == currentPoint {
-				switch event.Title {
-				case "":
-					rowEventsTitle = append(rowEventsTitle, hoverEmptyEventStyle.Render(""))
-				case "+":
-					rowEventsTitle = append(rowEventsTitle, hoverAddEventStyle.Render(event.Title))
-				default:
-					//TODO: Maybe truncate super long event names
-					if _, ok := m.selected[Point{x: m.cursor.x, y: m.cursor.y}]; ok {
-						rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Location))
-					} else {
-						rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Title))
-					}
-				}
-				continue
-			} else {
-				switch event.Title {
-				case "":
-					rowEventsTitle = append(rowEventsTitle, emptyEventStyle.Render(""))
-				case "+":
-					rowEventsTitle = append(rowEventsTitle, addEventStyle.Render((event.Title)))
-				default:
-					rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(truncateWithEllipsis(event.Title, 19)))
-				}
-
+		for i := range m.inputs {
+			s += m.inputs[i].View()
+			if i < len(m.inputs)-1 {
+				s += "\n"
 			}
+		}
+
+		button := &blurredButton
+		if m.focusIndex == len(m.inputs) {
+			button = &focusedButton
+		}
+		var b strings.Builder
+		fmt.Fprintf(&b, "\n\n%s\n\n", *button)
+		s += b.String()
+	} else {
+
+		s += whiteText.Render("Current Event:", m.eventMatrix[m.cursor.y][m.cursor.x].Title)
+		s += "\n\n"
+
+		styledDays := getDaysStartingToday()
+		for i := range styledDays {
+			styledDays[i] = dayStyle.Render(styledDays[i])
 		}
 		s += lipgloss.JoinHorizontal(
 			lipgloss.Top,
-			rowEventsTitle...,
+			styledDays...,
 		)
 		s += "\n"
+
+		for i, rows := range m.eventMatrix {
+			rowEventsTitle := []string{}
+			for j, event := range rows {
+				currentPoint := Point{x: j, y: i}
+				if m.cursor == currentPoint {
+					switch event.Title {
+					case "":
+						rowEventsTitle = append(rowEventsTitle, hoverEmptyEventStyle.Render(""))
+					case "+":
+						rowEventsTitle = append(rowEventsTitle, hoverAddEventStyle.Render(event.Title))
+					default:
+						//TODO: Maybe truncate super long event names
+						if _, ok := m.selected[Point{x: m.cursor.x, y: m.cursor.y}]; ok {
+							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Location))
+						} else {
+							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Title))
+						}
+					}
+					continue
+				} else {
+					switch event.Title {
+					case "":
+						rowEventsTitle = append(rowEventsTitle, emptyEventStyle.Render(""))
+					case "+":
+						rowEventsTitle = append(rowEventsTitle, addEventStyle.Render((event.Title)))
+					default:
+						rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(truncateWithEllipsis(event.Title, 19)))
+					}
+
+				}
+			}
+			s += lipgloss.JoinHorizontal(
+				lipgloss.Top,
+				rowEventsTitle...,
+			)
+			s += "\n"
+		}
 	}
 	return s
 }
