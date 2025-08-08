@@ -129,7 +129,7 @@ func initialModel(events []Event) Model {
 		selected:    make(map[Point]struct{}),
 		eventMatrix: eventMatrix,
 		mode:        "calendar",
-		inputs:      make([]textinput.Model, 3),
+		inputs:      make([]textinput.Model, 4),
 	}
 	var t textinput.Model
 	for i := range m.inputs {
@@ -139,17 +139,9 @@ func initialModel(events []Event) Model {
 
 		switch i {
 		case 0:
-			t.Placeholder = "Nickname"
 			t.Focus()
 			t.PromptStyle = focusedStyle
 			t.TextStyle = focusedStyle
-		case 1:
-			t.Placeholder = "Email"
-			t.CharLimit = 64
-		case 2:
-			t.Placeholder = "Password"
-			t.EchoMode = textinput.EchoPassword
-			t.EchoCharacter = '•'
 		}
 
 		m.inputs[i] = t
@@ -197,12 +189,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				} else {
 					m.mode = "forms"
 					m.focusIndex = 0
+					event := m.eventMatrix[m.cursor.y][m.cursor.x]
+					m.inputs[0].SetValue(event.Title)
+					m.inputs[1].SetValue(event.StartTime)
+					m.inputs[2].SetValue(event.EndTime)
+					m.inputs[3].SetValue(event.Location)
 					m.selected[Point{x: m.cursor.x, y: m.cursor.y}] = struct{}{}
 				}
 			}
 		}
 	}
-	if m.mode == "forms" {
+	if m.mode == "event" {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch msg.String() {
@@ -264,12 +261,11 @@ func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 
 func (m Model) View() string {
 	var s string
-	// s += fmt.Sprintln("\nHere is the index", m.focusIndex)
-	// s += fmt.Sprintln("\nHere is the input len", len(m.inputs))
-	if m.mode == "forms" {
+	if m.mode == "event" || m.mode == "newEvent" {
 
+		labels := []string{"Event:", "Start Time:", "End Time:", "Location:"}
 		for i := range m.inputs {
-			s += m.inputs[i].View()
+			s += labels[i] + "\n" + m.inputs[i].View()
 			if i < len(m.inputs)-1 {
 				s += "\n"
 			}
