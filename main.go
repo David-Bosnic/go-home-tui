@@ -199,7 +199,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	}
-	if m.mode == "event" {
+	if m.mode == "forms" {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch msg.String() {
@@ -261,7 +261,7 @@ func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 
 func (m Model) View() string {
 	var s string
-	if m.mode == "event" || m.mode == "newEvent" {
+	if m.mode == "forms" {
 
 		labels := []string{"Event:", "Start Time:", "End Time:", "Location:"}
 		for i := range m.inputs {
