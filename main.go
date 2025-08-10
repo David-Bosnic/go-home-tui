@@ -15,6 +15,7 @@ import (
 )
 
 type Event struct {
+	Id        string `json:"eventId"`
 	Title     string `json:"title"`
 	StartTime string `json:"startTime"`
 	Date      string `json:"date"`
@@ -130,7 +131,7 @@ func initialModel(events []Event) Model {
 		selected:    make(map[Point]struct{}),
 		eventMatrix: eventMatrix,
 		mode:        "calendar",
-		inputs:      make([]textinput.Model, 4),
+		inputs:      make([]textinput.Model, 5),
 	}
 	var t textinput.Model
 	for i := range m.inputs {
@@ -198,6 +199,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.inputs[1].SetValue(event.StartTime)
 					m.inputs[2].SetValue(event.EndTime)
 					m.inputs[3].SetValue(event.Location)
+					m.inputs[4].SetValue(event.Id)
 					m.selected[Point{x: m.cursor.x, y: m.cursor.y}] = struct{}{}
 				}
 			}
@@ -267,7 +269,7 @@ func (m Model) View() string {
 	var s string
 	if m.mode == "forms" {
 
-		labels := []string{"Event:", "Start Time:", "End Time:", "Location:"}
+		labels := []string{"Event:", "Start Time:", "End Time:", "Location:", "Id: "}
 		for i := range m.inputs {
 			s += labels[i] + "\n" + m.inputs[i].View()
 			if i < len(m.inputs)-1 {
