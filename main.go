@@ -309,8 +309,8 @@ func (m Model) View() string {
 						rowEventsTitle = append(rowEventsTitle, hoverAddEventStyle.Render(event.Title))
 					default:
 						//TODO: Maybe truncate super long event names
-						if m.flipState {
-							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Title))
+						if !m.flipState {
+							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(truncate(event.Title, 35, false), event.StartTime+"-"+event.EndTime))
 						} else {
 							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Location))
 						}
@@ -323,7 +323,7 @@ func (m Model) View() string {
 					case "+":
 						rowEventsTitle = append(rowEventsTitle, addEventStyle.Render((event.Title)))
 					default:
-						rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(truncateWithEllipsis(event.Title, 19)))
+						rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(truncate(event.Title, 26, true)))
 					}
 
 				}
@@ -432,9 +432,12 @@ func dateToIndex(date string) int {
 	return days
 }
 
-func truncateWithEllipsis(s string, maxLen int) string {
+func truncate(s string, maxLen int, elipse bool) string {
 	if len(s) <= maxLen {
 		return s
 	}
-	return s[:maxLen-3] + "..."
+	if elipse {
+		return s[:maxLen-3] + "\n..."
+	}
+	return s[:maxLen]
 }
