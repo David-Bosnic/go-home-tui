@@ -36,6 +36,7 @@ type Model struct {
 	mode        string
 	inputs      []textinput.Model
 	focusIndex  int
+	flipState   bool
 }
 
 // Styles
@@ -182,6 +183,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.cursor.x++
 				}
 
+			case "f":
+				m.flipState = !m.flipState
+
 			case " ", "enter":
 				_, ok := m.selected[Point{x: m.cursor.x, y: m.cursor.y}]
 				if ok {
@@ -305,10 +309,10 @@ func (m Model) View() string {
 						rowEventsTitle = append(rowEventsTitle, hoverAddEventStyle.Render(event.Title))
 					default:
 						//TODO: Maybe truncate super long event names
-						if _, ok := m.selected[Point{x: m.cursor.x, y: m.cursor.y}]; ok {
-							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Location))
-						} else {
+						if m.flipState {
 							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Title))
+						} else {
+							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Location))
 						}
 					}
 					continue
