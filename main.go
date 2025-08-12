@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -16,7 +18,7 @@ import (
 
 type Event struct {
 	Id        string `json:"eventId"`
-	Title     string `json:"title"`
+	Summary   string `json:"summary"`
 	StartTime string `json:"startTime"`
 	Date      string `json:"date"`
 	Location  string `json:"location"`
@@ -122,7 +124,7 @@ func initialModel(events []Event) Model {
 
 	addEventCards := make([]Event, 7)
 	for i := range addEventCards {
-		addEventCards[i].Title = "+"
+		addEventCards[i].Summary = "+"
 	}
 	eventMatrix = append([][]Event{addEventCards}, eventMatrix...)
 
@@ -171,16 +173,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 			case "down", "j":
-				if m.cursor.y < eventRowCount(m.events) && m.eventMatrix[m.cursor.y+1][m.cursor.x].Title != "" {
+				if m.cursor.y < eventRowCount(m.events) && m.eventMatrix[m.cursor.y+1][m.cursor.x].Summary != "" {
 					m.cursor.y++
 				}
 			case "left", "h":
-				if m.cursor.x > 0 && m.eventMatrix[m.cursor.y][m.cursor.x-1].Title != "" {
+				if m.cursor.x > 0 && m.eventMatrix[m.cursor.y][m.cursor.x-1].Summary != "" {
 					m.cursor.x--
 				}
 
 			case "right", "l":
-				if m.cursor.x < 6 && m.eventMatrix[m.cursor.y][m.cursor.x+1].Title != "" {
+				if m.cursor.x < 6 && m.eventMatrix[m.cursor.y][m.cursor.x+1].Summary != "" {
 					m.cursor.x++
 				}
 
@@ -195,7 +197,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.mode = "forms"
 					m.focusIndex = 0
 					event := m.eventMatrix[m.cursor.y][m.cursor.x]
-					m.inputs[0].SetValue(event.Title)
+					m.inputs[0].SetValue(event.Summary)
 					m.inputs[1].SetValue(event.StartTime)
 					m.inputs[2].SetValue(event.EndTime)
 					m.inputs[3].SetValue(event.Location)
@@ -218,7 +220,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 
-				// Cycle indexes
 				if s == "up" || s == "shift+tab" {
 					m.focusIndex--
 				}
@@ -286,7 +287,7 @@ func (m Model) View() string {
 		s += b.String()
 	} else {
 
-		s += whiteText.Render("Current Event:", m.eventMatrix[m.cursor.y][m.cursor.x].Title)
+		s += whiteText.Render("Current Event:", m.eventMatrix[m.cursor.y][m.cursor.x].Summary)
 		s += "\n\n"
 
 		styledDays := getDaysStartingToday()
@@ -304,28 +305,28 @@ func (m Model) View() string {
 			for j, event := range rows {
 				currentPoint := Point{x: j, y: i}
 				if m.cursor == currentPoint {
-					switch event.Title {
+					switch event.Summary {
 					case "":
 						rowEventsTitle = append(rowEventsTitle, hoverEmptyEventStyle.Render(""))
 					case "+":
-						rowEventsTitle = append(rowEventsTitle, hoverAddEventStyle.Render(event.Title))
+						rowEventsTitle = append(rowEventsTitle, hoverAddEventStyle.Render(event.Summary))
 					default:
 						//TODO: Maybe truncate super long event names
 						if !m.flipState {
-							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(truncate(event.Title, 35, false), event.StartTime+"-"+event.EndTime))
+							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(truncate(event.Summary, 35, false), event.StartTime+"-"+event.EndTime))
 						} else {
 							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Location))
 						}
 					}
 					continue
 				} else {
-					switch event.Title {
+					switch event.Summary {
 					case "":
 						rowEventsTitle = append(rowEventsTitle, emptyEventStyle.Render(""))
 					case "+":
-						rowEventsTitle = append(rowEventsTitle, addEventStyle.Render((event.Title)))
+						rowEventsTitle = append(rowEventsTitle, addEventStyle.Render((event.Summary)))
 					default:
-						rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(truncate(event.Title, 26, true)))
+						rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(truncate(event.Summary, 26, true)))
 					}
 
 				}
@@ -348,8 +349,12 @@ func main() {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
-	// postEvent()
 
+	// postEvent()
+	updateEvent(Event{
+		Id:      "1qo4thikt1or83jqtjgih66t5a",
+		Summary: "Taco Time",
+	})
 }
 func getEvents() []Event {
 	res, err := http.Get("http://localhost:8080/calendar/events")
@@ -379,6 +384,26 @@ func postEvent() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func updateEvent(event Event) {
+	payload, err := json.Marshal(event)
+	if err != nil {
+		log.Fatal(err)
+	}
+	client := &http.Client{}
+	url := "http://localhost:8080/calendar/events"
+
+	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(payload))
+	if err != nil {
+		log.Fatal(err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
 }
 func refreshOauth() {
 	_, err := http.Post("http://localhost:8080/admin/refresh", "", nil)

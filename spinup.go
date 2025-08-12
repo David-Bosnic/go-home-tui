@@ -126,6 +126,7 @@ func SpinUp() {
 	mux.HandleFunc("GET /auth/callback", apiConf.handleOauthCallback)
 	mux.HandleFunc("GET /auth/google", apiConf.startOauthFlow)
 	mux.HandleFunc("POST /admin/refresh", apiConf.refreshAccessTokenPost)
+	mux.HandleFunc("PATCH /calendar/events", apiConf.handlerEventsPatch)
 
 	ServerMux := http.Server{
 		Handler: corsMiddleware(mux),

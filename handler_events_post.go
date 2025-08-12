@@ -30,13 +30,13 @@ func (config *apiConfig) handlerEventsPost(w http.ResponseWriter, r *http.Reques
 
 	newEvent.End.DateTime = "2025-08-01T11:00:00-06:00"
 
-	out, err := json.Marshal(newEvent)
+	payload, err := json.Marshal(newEvent)
 	if err != nil {
 		log.Printf("POST /calendar/events Error marshaling event %v\n", err)
 		http.Error(w, "Failed to parse calendar event", http.StatusInternalServerError)
 		return
 	}
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(out))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
 	if err != nil {
 		log.Printf("POST /calendar/events Error creating new req %v\n", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
