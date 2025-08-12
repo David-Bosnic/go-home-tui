@@ -216,6 +216,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "tab", "shift+tab", "enter", "up", "down":
 				s := msg.String()
 				if s == "enter" && m.focusIndex == len(m.inputs) {
+					updateEvent(Event{
+						Id:      m.inputs[4].Value(),
+						Summary: m.inputs[0].Value(),
+					})
 					m.mode = "calendar"
 					return m, nil
 				}
@@ -245,8 +249,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.inputs[i].Blur()
 					m.inputs[i].PromptStyle = noStyle
 					m.inputs[i].TextStyle = noStyle
-				}
 
+				}
 				return m, tea.Batch(cmds...)
 			}
 			cmd := m.updateInputs(msg)
@@ -351,10 +355,6 @@ func main() {
 	}
 
 	// postEvent()
-	updateEvent(Event{
-		Id:      "1qo4thikt1or83jqtjgih66t5a",
-		Summary: "Taco Time",
-	})
 }
 func getEvents() []Event {
 	res, err := http.Get("http://localhost:8080/calendar/events")

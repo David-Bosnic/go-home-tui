@@ -46,6 +46,5 @@ func (config *apiConfig) handlerEventsPatch(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "Calendar service error", http.StatusBadGateway)
 		return
 	}
-	log.Println("Status code", resp.StatusCode, string(body))
 
 }
