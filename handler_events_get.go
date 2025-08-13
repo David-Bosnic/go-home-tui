@@ -90,11 +90,13 @@ func (config *apiConfig) handlerEventsGet(w http.ResponseWriter, r *http.Request
 		if err != nil {
 			log.Printf("GET /calendar/events Error parsing time %v\n", err)
 			http.Error(w, "Failed to parse calendar time", http.StatusInternalServerError)
+			return
 		}
 		parsedTimeEnd, err := time.Parse(time.RFC3339, item.End.DateTime)
 		if err != nil {
 			log.Printf("GET /calendar/events Error parsing time %v\n", err)
 			http.Error(w, "Failed to parse calendar time", http.StatusInternalServerError)
+			return
 		}
 
 		events = append(events, Event{

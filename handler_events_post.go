@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-type PostEvent struct {
+type PostEventType struct {
 	Summary string `json:"summary"`
 	Start   struct {
 		DateTime string `json:"dateTime"`
@@ -23,7 +23,7 @@ type PostEvent struct {
 
 func (config *apiConfig) handlerEventsPost(w http.ResponseWriter, r *http.Request) {
 	url := fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/%s/events", config.calendarID)
-	newEvent := PostEvent{
+	newEvent := PostEventType{
 		Summary: "Test Event",
 	}
 	newEvent.Start.DateTime = "2025-08-01T10:00:00-06:00"

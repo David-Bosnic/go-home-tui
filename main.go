@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -19,10 +17,10 @@ import (
 type Event struct {
 	Id        string `json:"eventId"`
 	Summary   string `json:"summary"`
-	StartTime string `json:"startTime"`
+	StartTime string `json:"start_time"`
 	Date      string `json:"date"`
 	Location  string `json:"location"`
-	EndTime   string `json:"endTime"`
+	EndTime   string `json:"end_time"`
 }
 
 type Point struct {
@@ -216,7 +214,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "tab", "shift+tab", "enter", "up", "down":
 				s := msg.String()
 				if s == "enter" && m.focusIndex == len(m.inputs) {
-					updateEvent(Event{
+					UpdateEvent(Event{
 						Id:      m.inputs[4].Value(),
 						Summary: m.inputs[0].Value(),
 					})
@@ -346,15 +344,13 @@ func (m Model) View() string {
 }
 
 func main() {
-	refreshOauth()
+	RefreshOauth()
 	events := getEvents()
 	p := tea.NewProgram(initialModel(events))
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
-
-	// postEvent()
 }
 func getEvents() []Event {
 	res, err := http.Get("http://localhost:8080/calendar/events")
@@ -378,52 +374,6 @@ func getEvents() []Event {
 	}
 	return events
 }
-func postEvent() {
-	_, err := http.Post("http://localhost:8080/calendar/events", "", nil)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
-
-func updateEvent(event Event) {
-	payload, err := json.Marshal(event)
-	if err != nil {
-		log.Fatal(err)
-	}
-	client := &http.Client{}
-	url := "http://localhost:8080/calendar/events"
-
-	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(payload))
-	if err != nil {
-		log.Fatal(err)
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-}
-func refreshOauth() {
-	_, err := http.Post("http://localhost:8080/admin/refresh", "", nil)
-	if err != nil {
-		fmt.Println("Error with post req", err)
-		os.Exit(1)
-	}
-}
-
-func eventRowCount(events []Event) int {
-	countMap := make(map[int]int)
-	maxCount := 0
-	for _, event := range events {
-		countMap[dateToIndex(event.Date)]++
-		if countMap[dateToIndex(event.Date)] > maxCount {
-			maxCount++
-		}
-	}
-	return maxCount
-}
 func getDaysStartingToday() []string {
 	allDays := []string{
 		"Sun",
@@ -436,6 +386,18 @@ func getDaysStartingToday() []string {
 	}
 	today := int(time.Now().Weekday())
 	return append(allDays[today:], allDays[:today]...)
+}
+
+func eventRowCount(events []Event) int {
+	countMap := make(map[int]int)
+	maxCount := 0
+	for _, event := range events {
+		countMap[dateToIndex(event.Date)]++
+		if countMap[dateToIndex(event.Date)] > maxCount {
+			maxCount++
+		}
+	}
+	return maxCount
 }
 
 func dateToIndex(date string) int {
