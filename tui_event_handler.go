@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
+	"io"
 	"net/http"
 	"os"
 )
@@ -17,24 +17,24 @@ func PostEvent() {
 	}
 }
 
-func UpdateEvent(event Event) {
+func UpdateEvent(event Event) error {
 	payload, err := json.Marshal(event)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	client := &http.Client{}
 	url := "http://localhost:8080/calendar/events"
 
 	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(payload))
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer resp.Body.Close()
-
+	return nil
 }
 func RefreshOauth() {
 	_, err := http.Post("http://localhost:8080/admin/refresh", "", nil)
@@ -42,4 +42,26 @@ func RefreshOauth() {
 		fmt.Println("Error with post req", err)
 		os.Exit(1)
 	}
+}
+func GetEvents() []Event {
+	res, err := http.Get("http://localhost:8080/calendar/events")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	var events []Event
+	err = json.Unmarshal(body, &events)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	return events
 }

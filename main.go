@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -15,7 +13,7 @@ import (
 )
 
 type Event struct {
-	Id        string `json:"eventId"`
+	Id        string `json:"event_id"`
 	Summary   string `json:"summary"`
 	StartTime string `json:"start_time"`
 	Date      string `json:"date"`
@@ -39,6 +37,14 @@ type Model struct {
 	focusIndex  int
 	flipState   bool
 }
+
+const (
+	Summary = iota
+	StartTime
+	EndTime
+	Location
+	Id
+)
 
 // Styles
 var (
@@ -137,7 +143,6 @@ func initialModel(events []Event) Model {
 	for i := range m.inputs {
 		t = textinput.New()
 		t.Cursor.Style = cursorStyle
-		t.CharLimit = 32
 
 		switch i {
 		case 0:
@@ -214,10 +219,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "tab", "shift+tab", "enter", "up", "down":
 				s := msg.String()
 				if s == "enter" && m.focusIndex == len(m.inputs) {
-					UpdateEvent(Event{
-						Id:      m.inputs[4].Value(),
-						Summary: m.inputs[0].Value(),
-					})
+					err := formsValidation(m.inputs)
+					if err != nil {
+						log.Println("Invalid forms:", err)
+						return m, nil
+					}
+					updatedEvent := Event{
+						Id:        m.inputs[Id].Value(),
+						StartTime: m.inputs[StartTime].Value(),
+						EndTime:   m.inputs[EndTime].Value(),
+						Summary:   m.inputs[Summary].Value(),
+						Location:  m.inputs[Location].Value(),
+					}
+
+					err = UpdateEvent(updatedEvent)
+					if err != nil {
+						log.Println("Failed to update Event:", err)
+					}
+					m.eventMatrix[m.cursor.y][m.cursor.x] = updatedEvent
 					m.mode = "calendar"
 					return m, nil
 				}
@@ -271,7 +290,6 @@ func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 func (m Model) View() string {
 	var s string
 	if m.mode == "forms" {
-
 		labels := []string{"Event:", "Start Time:", "End Time:", "Location:", "Id: "}
 		for i := range m.inputs {
 			s += labels[i] + "\n" + m.inputs[i].View()
@@ -337,6 +355,7 @@ func (m Model) View() string {
 				lipgloss.Top,
 				rowEventsTitle...,
 			)
+
 			s += "\n"
 		}
 	}
@@ -345,34 +364,12 @@ func (m Model) View() string {
 
 func main() {
 	RefreshOauth()
-	events := getEvents()
+	events := GetEvents()
 	p := tea.NewProgram(initialModel(events))
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
-}
-func getEvents() []Event {
-	res, err := http.Get("http://localhost:8080/calendar/events")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	var events []Event
-	err = json.Unmarshal(body, &events)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	return events
 }
 func getDaysStartingToday() []string {
 	allDays := []string{
@@ -399,7 +396,6 @@ func eventRowCount(events []Event) int {
 	}
 	return maxCount
 }
-
 func dateToIndex(date string) int {
 	targetDate, err := time.Parse("2006-01-02", date)
 	if err != nil {
@@ -421,6 +417,19 @@ func dateToIndex(date string) int {
 	return days
 }
 
+func formsValidation(inputs []textinput.Model) error {
+	startTime := inputs[StartTime].Value()
+	endTime := inputs[EndTime].Value()
+	_, err := time.Parse("15:04:05", startTime)
+	if err != nil {
+		return err
+	}
+	_, err = time.Parse("15:04:05", endTime)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func truncate(s string, maxLen int, elipse bool) string {
 	if len(s) <= maxLen {
 		return s
