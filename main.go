@@ -2,14 +2,14 @@ package main
 
 import (
 	"fmt"
+	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"log"
 	"os"
 	"strings"
 	"time"
-
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type Event struct {
@@ -27,6 +27,7 @@ type Point struct {
 }
 
 type Model struct {
+	spinner     spinner.Model
 	events      []Event
 	cursor      Point
 	point       Point
@@ -108,6 +109,9 @@ func init() {
 }
 
 func initialModel(events []Event) Model {
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
 	rows := eventRowCount(events)
 	cols := 7
@@ -133,6 +137,7 @@ func initialModel(events []Event) Model {
 	eventMatrix = append([][]Event{addEventCards}, eventMatrix...)
 
 	m := Model{
+		spinner:     s,
 		events:      events,
 		selected:    make(map[Point]struct{}),
 		eventMatrix: eventMatrix,
@@ -158,7 +163,7 @@ func initialModel(events []Event) Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(tea.ClearScreen, textinput.Blink)
+	return tea.Batch(tea.ClearScreen, textinput.Blink, m.spinner.Tick)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -210,6 +215,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	}
+	if m.mode == "loading" {
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
+	}
 	if m.mode == "forms" {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
@@ -219,6 +229,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "tab", "shift+tab", "enter", "up", "down":
 				s := msg.String()
 				if s == "enter" && m.focusIndex == len(m.inputs) {
+					m.mode = "loading"
 					err := formsValidation(m.inputs)
 					if err != nil {
 						log.Println("Invalid forms:", err)
@@ -275,7 +286,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	}
-	return m, nil
+	var cmd tea.Cmd
+	m.spinner, cmd = m.spinner.Update(msg)
+	return m, cmd
 
 }
 func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
@@ -305,6 +318,8 @@ func (m Model) View() string {
 		var b strings.Builder
 		fmt.Fprintf(&b, "\n\n%s\n\n", *button)
 		s += b.String()
+	} else if m.mode == "loading" {
+		s += fmt.Sprintf("Loading %s", m.spinner.View())
 	} else {
 
 		s += whiteText.Render("Current Event:", m.eventMatrix[m.cursor.y][m.cursor.x].Summary)
