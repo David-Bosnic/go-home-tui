@@ -302,7 +302,8 @@ func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 
 func (m Model) View() string {
 	var s string
-	if m.mode == "forms" {
+	switch m.mode {
+	case "forms":
 		labels := []string{"Event:", "Start Time:", "End Time:", "Location:", "Id: "}
 		for i := range m.inputs {
 			s += labels[i] + "\n" + m.inputs[i].View()
@@ -318,10 +319,9 @@ func (m Model) View() string {
 		var b strings.Builder
 		fmt.Fprintf(&b, "\n\n%s\n\n", *button)
 		s += b.String()
-	} else if m.mode == "loading" {
+	case "loading":
 		s += fmt.Sprintf("Loading %s", m.spinner.View())
-	} else {
-
+	case "calendar":
 		s += whiteText.Render("Current Event:", m.eventMatrix[m.cursor.y][m.cursor.x].Summary)
 		s += "\n\n"
 
@@ -431,7 +431,6 @@ func dateToIndex(date string) int {
 
 	return days
 }
-
 func formsValidation(inputs []textinput.Model) error {
 	startTime := inputs[StartTime].Value()
 	endTime := inputs[EndTime].Value()
