@@ -53,9 +53,12 @@ var (
 	cursorStyle  = focusedStyle
 	noStyle      = lipgloss.NewStyle()
 
-	blurredStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	blurredButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Submit"))
-	focusedButton = focusedStyle.Render("[ Submit ]")
+	blurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	blurredSubmitButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Submit"))
+	focusedSubmitButton = focusedStyle.Render("[ Submit ]")
+
+	blurredCancelButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Cancel"))
+	focusedCancelButton = focusedStyle.Render("[ Cancel ]")
 
 	dayStyle = lipgloss.NewStyle().
 			PaddingRight(7).
@@ -142,19 +145,12 @@ func initialModel(events []Event) Model {
 		selected:    make(map[Point]struct{}),
 		eventMatrix: eventMatrix,
 		mode:        "calendar",
-		inputs:      make([]textinput.Model, 5),
+		inputs:      make([]textinput.Model, 6),
 	}
 	var t textinput.Model
 	for i := range m.inputs {
 		t = textinput.New()
 		t.Cursor.Style = cursorStyle
-
-		switch i {
-		case 0:
-			t.Focus()
-			t.PromptStyle = focusedStyle
-			t.TextStyle = focusedStyle
-		}
 
 		m.inputs[i] = t
 	}
@@ -305,19 +301,24 @@ func (m Model) View() string {
 	switch m.mode {
 	case "forms":
 		labels := []string{"Event:", "Start Time:", "End Time:", "Location:", "Id: "}
-		for i := range m.inputs {
+		for i := range labels {
 			s += labels[i] + "\n" + m.inputs[i].View()
 			if i < len(m.inputs)-1 {
 				s += "\n"
 			}
 		}
 
-		button := &blurredButton
+		submitButton := &blurredSubmitButton
+		if m.focusIndex == len(m.inputs)-1 {
+			submitButton = &focusedSubmitButton
+		}
+
+		cancelButton := &blurredCancelButton
 		if m.focusIndex == len(m.inputs) {
-			button = &focusedButton
+			cancelButton = &focusedCancelButton
 		}
 		var b strings.Builder
-		fmt.Fprintf(&b, "\n\n%s\n\n", *button)
+		fmt.Fprintf(&b, "\n\n%s  %s\n\n", *submitButton, *cancelButton)
 		s += b.String()
 	case "loading":
 		s += fmt.Sprintf("Loading %s", m.spinner.View())
