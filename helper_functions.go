@@ -54,11 +54,11 @@ func DateToIndex(date string) int {
 func FormsValidation(inputs []textinput.Model) error {
 	startTime := inputs[StartTime].Value()
 	endTime := inputs[EndTime].Value()
-	_, err := time.Parse("15:04:05", startTime)
+	_, err := time.Parse(time.RFC3339, startTime)
 	if err != nil {
 		return err
 	}
-	_, err = time.Parse("15:04:05", endTime)
+	_, err = time.Parse(time.RFC3339, endTime)
 	if err != nil {
 		return err
 	}
@@ -72,4 +72,8 @@ func Truncate(s string, maxLen int, elipse bool) string {
 		return s[:maxLen-3] + "\n..."
 	}
 	return s[:maxLen]
+}
+
+func EventTimeFormatter(t string) int {
+	return time.Time.Day(time.Now())
 }

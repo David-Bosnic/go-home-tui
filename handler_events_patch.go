@@ -9,6 +9,7 @@ import (
 	"net/http"
 )
 
+// BUG: Patching does not work on some events (getting 400)
 func (config *apiConfig) handlerEventsPatch(w http.ResponseWriter, r *http.Request) {
 	var event Event
 	err := json.NewDecoder(r.Body).Decode(&event)

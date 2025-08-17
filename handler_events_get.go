@@ -100,12 +100,16 @@ func (config *apiConfig) handlerEventsGet(w http.ResponseWriter, r *http.Request
 		}
 
 		events = append(events, Event{
-			Id:        item.ID,
-			Summary:   item.Summary,
-			Date:      parsedTimeStart.Format("2006-01-02"),
-			StartTime: parsedTimeStart.Format("15:04:05"),
-			EndTime:   parsedTimeEnd.Format("15:04:05"),
-			Location:  item.Location,
+			Id:      item.ID,
+			Summary: item.Summary,
+			Date:    parsedTimeStart.Format("2006-01-02"),
+			Start: DateTime{
+				DateTime: parsedTimeStart,
+			},
+			End: DateTime{
+				DateTime: parsedTimeEnd,
+			},
+			Location: item.Location,
 		})
 	}
 

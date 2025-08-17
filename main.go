@@ -9,15 +9,20 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
+type DateTime struct {
+	DateTime time.Time `json:"dateTime"`
+	TimeZone time.Time `json:"timeZone"`
+}
 type Event struct {
-	Id        string `json:"event_id"`
-	Summary   string `json:"summary"`
-	StartTime string `json:"start_time"`
-	Date      string `json:"date"`
-	Location  string `json:"location"`
-	EndTime   string `json:"end_time"`
+	Id       string   `json:"event_id"`
+	Summary  string   `json:"summary"`
+	Start    DateTime `json:"start"`
+	End      DateTime `json:"end"`
+	Date     string   `json:"date"`
+	Location string   `json:"location"`
 }
 
 type Point struct {
@@ -201,8 +206,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.focusIndex = 0
 					event := m.eventMatrix[m.cursor.y][m.cursor.x]
 					m.inputs[0].SetValue(event.Summary)
-					m.inputs[1].SetValue(event.StartTime)
-					m.inputs[2].SetValue(event.EndTime)
+					m.inputs[1].SetValue(event.Start.DateTime.Format(time.RFC3339))
+					m.inputs[2].SetValue(event.Start.DateTime.Format(time.RFC3339))
 					m.inputs[3].SetValue(event.Location)
 					m.inputs[4].SetValue(event.Id)
 					m.selected[Point{x: m.cursor.x, y: m.cursor.y}] = struct{}{}
@@ -224,19 +229,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "tab", "shift+tab", "enter", "up", "down":
 				s := msg.String()
 				if s == "enter" && m.focusIndex == len(m.inputs)-1 {
-					m.mode = "loading"
 					err := FormsValidation(m.inputs)
 					if err != nil {
 						log.Println("Invalid forms:", err)
 						return m, nil
 					}
-					updatedEvent := Event{
-						Id:        m.inputs[Id].Value(),
-						StartTime: m.inputs[StartTime].Value(),
-						EndTime:   m.inputs[EndTime].Value(),
-						Summary:   m.inputs[Summary].Value(),
-						Location:  m.inputs[Location].Value(),
+					var updatedEvent Event
+					updatedEvent.Id = m.inputs[Id].Value()
+					updatedEvent.Start.DateTime, err = time.Parse(time.RFC3339, m.inputs[StartTime].Value())
+					if err != nil {
+						log.Fatal(err)
 					}
+					updatedEvent.End.DateTime, err = time.Parse(time.RFC3339, m.inputs[EndTime].Value())
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					updatedEvent.Summary = m.inputs[Summary].Value()
+					updatedEvent.Location = m.inputs[Location].Value()
 
 					err = UpdateEvent(updatedEvent)
 					if err != nil {
@@ -350,7 +360,7 @@ func (m Model) View() string {
 					default:
 						//TODO: Maybe truncate super long event names
 						if !m.flipState {
-							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(Truncate(event.Summary, 35, false), event.StartTime+"-"+event.EndTime))
+							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(Truncate(event.Summary, 35, false), event.Start.DateTime.Format("15:04")+"-"+event.End.DateTime.Format("15:04")))
 						} else {
 							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Location))
 						}
