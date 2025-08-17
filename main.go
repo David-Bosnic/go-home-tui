@@ -14,14 +14,14 @@ import (
 
 type DateTime struct {
 	DateTime time.Time `json:"dateTime"`
-	TimeZone time.Time `json:"timeZone"`
+	Date     string    `json:"date"`
+	TimeZone int       `json:"timeZone"`
 }
 type Event struct {
 	Id       string   `json:"event_id"`
 	Summary  string   `json:"summary"`
 	Start    DateTime `json:"start"`
 	End      DateTime `json:"end"`
-	Date     string   `json:"date"`
 	Location string   `json:"location"`
 }
 
@@ -130,7 +130,7 @@ func initialModel(events []Event) Model {
 
 	dayMap := make(map[int]int)
 	for _, event := range events {
-		eventIndex := DateToIndex(event.Date)
+		eventIndex := DateToIndex(event.Start.Date)
 		if eventIndex >= 0 && eventIndex < cols && dayMap[eventIndex] < rows {
 			eventMatrix[dayMap[eventIndex]][eventIndex] = event
 			dayMap[eventIndex]++
@@ -206,8 +206,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.focusIndex = 0
 					event := m.eventMatrix[m.cursor.y][m.cursor.x]
 					m.inputs[0].SetValue(event.Summary)
-					m.inputs[1].SetValue(event.Start.DateTime.Format(time.RFC3339))
-					m.inputs[2].SetValue(event.Start.DateTime.Format(time.RFC3339))
+					m.inputs[1].SetValue(event.Start.DateTime.Format("15:04"))
+					m.inputs[2].SetValue(event.End.DateTime.Format("15:04"))
 					m.inputs[3].SetValue(event.Location)
 					m.inputs[4].SetValue(event.Id)
 					m.selected[Point{x: m.cursor.x, y: m.cursor.y}] = struct{}{}

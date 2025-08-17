@@ -24,8 +24,8 @@ func EventRowCount(events []Event) int {
 	countMap := make(map[int]int)
 	maxCount := 0
 	for _, event := range events {
-		countMap[DateToIndex(event.Date)]++
-		if countMap[DateToIndex(event.Date)] > maxCount {
+		countMap[DateToIndex(event.Start.DateTime.Format("2006-01-02"))]++
+		if countMap[DateToIndex(event.Start.DateTime.Format("2006-01-02"))] > maxCount {
 			maxCount++
 		}
 	}

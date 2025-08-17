@@ -98,16 +98,20 @@ func (config *apiConfig) handlerEventsGet(w http.ResponseWriter, r *http.Request
 			http.Error(w, "Failed to parse calendar time", http.StatusInternalServerError)
 			return
 		}
-
+		_, startZone := parsedTimeStart.Zone()
+		_, endZone := parsedTimeEnd.Zone()
 		events = append(events, Event{
 			Id:      item.ID,
 			Summary: item.Summary,
-			Date:    parsedTimeStart.Format("2006-01-02"),
 			Start: DateTime{
 				DateTime: parsedTimeStart,
+				Date:     parsedTimeStart.Format(time.DateOnly),
+				TimeZone: startZone,
 			},
 			End: DateTime{
 				DateTime: parsedTimeEnd,
+				Date:     parsedTimeEnd.Format(time.DateOnly),
+				TimeZone: endZone,
 			},
 			Location: item.Location,
 		})
