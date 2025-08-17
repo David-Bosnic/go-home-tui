@@ -9,7 +9,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"time"
 )
 
 type Event struct {
@@ -116,7 +115,7 @@ func initialModel(events []Event) Model {
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
-	rows := eventRowCount(events)
+	rows := EventRowCount(events)
 	cols := 7
 	eventMatrix := make([][]Event, rows)
 
@@ -126,7 +125,7 @@ func initialModel(events []Event) Model {
 
 	dayMap := make(map[int]int)
 	for _, event := range events {
-		eventIndex := dateToIndex(event.Date)
+		eventIndex := DateToIndex(event.Date)
 		if eventIndex >= 0 && eventIndex < cols && dayMap[eventIndex] < rows {
 			eventMatrix[dayMap[eventIndex]][eventIndex] = event
 			dayMap[eventIndex]++
@@ -177,7 +176,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 			case "down", "j":
-				if m.cursor.y < eventRowCount(m.events) && m.eventMatrix[m.cursor.y+1][m.cursor.x].Summary != "" {
+				if m.cursor.y < EventRowCount(m.events) && m.eventMatrix[m.cursor.y+1][m.cursor.x].Summary != "" {
 					m.cursor.y++
 				}
 			case "left", "h":
@@ -224,9 +223,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			case "tab", "shift+tab", "enter", "up", "down":
 				s := msg.String()
-				if s == "enter" && m.focusIndex == len(m.inputs) {
+				if s == "enter" && m.focusIndex == len(m.inputs)-1 {
 					m.mode = "loading"
-					err := formsValidation(m.inputs)
+					err := FormsValidation(m.inputs)
 					if err != nil {
 						log.Println("Invalid forms:", err)
 						return m, nil
@@ -246,6 +245,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.eventMatrix[m.cursor.y][m.cursor.x] = updatedEvent
 					m.mode = "calendar"
 					return m, nil
+				} else if s == "enter" && m.focusIndex == len(m.inputs) {
+					m.mode = "calendar"
 				}
 
 				if s == "up" || s == "shift+tab" {
@@ -326,7 +327,7 @@ func (m Model) View() string {
 		s += whiteText.Render("Current Event:", m.eventMatrix[m.cursor.y][m.cursor.x].Summary)
 		s += "\n\n"
 
-		styledDays := getDaysStartingToday()
+		styledDays := GetDaysStartingToday()
 		for i := range styledDays {
 			styledDays[i] = dayStyle.Render(styledDays[i])
 		}
@@ -349,7 +350,7 @@ func (m Model) View() string {
 					default:
 						//TODO: Maybe truncate super long event names
 						if !m.flipState {
-							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(truncate(event.Summary, 35, false), event.StartTime+"-"+event.EndTime))
+							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(Truncate(event.Summary, 35, false), event.StartTime+"-"+event.EndTime))
 						} else {
 							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Location))
 						}
@@ -362,7 +363,7 @@ func (m Model) View() string {
 					case "+":
 						rowEventsTitle = append(rowEventsTitle, addEventStyle.Render((event.Summary)))
 					default:
-						rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(truncate(event.Summary, 26, true)))
+						rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(Truncate(event.Summary, 26, true)))
 					}
 
 				}
@@ -386,71 +387,4 @@ func main() {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
-}
-func getDaysStartingToday() []string {
-	allDays := []string{
-		"Sun",
-		"Mon",
-		"Tue",
-		"Wed",
-		"Thu",
-		"Fri",
-		"Sat",
-	}
-	today := int(time.Now().Weekday())
-	return append(allDays[today:], allDays[:today]...)
-}
-
-func eventRowCount(events []Event) int {
-	countMap := make(map[int]int)
-	maxCount := 0
-	for _, event := range events {
-		countMap[dateToIndex(event.Date)]++
-		if countMap[dateToIndex(event.Date)] > maxCount {
-			maxCount++
-		}
-	}
-	return maxCount
-}
-func dateToIndex(date string) int {
-	targetDate, err := time.Parse("2006-01-02", date)
-	if err != nil {
-		return -1
-	}
-
-	now := time.Now()
-	currentDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-
-	targetDate = time.Date(targetDate.Year(), targetDate.Month(), targetDate.Day(), 0, 0, 0, 0, now.Location())
-
-	diff := targetDate.Sub(currentDate)
-	days := int(diff.Hours() / 24)
-
-	if days < 0 || days > 7 {
-		return -1
-	}
-
-	return days
-}
-func formsValidation(inputs []textinput.Model) error {
-	startTime := inputs[StartTime].Value()
-	endTime := inputs[EndTime].Value()
-	_, err := time.Parse("15:04:05", startTime)
-	if err != nil {
-		return err
-	}
-	_, err = time.Parse("15:04:05", endTime)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-func truncate(s string, maxLen int, elipse bool) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	if elipse {
-		return s[:maxLen-3] + "\n..."
-	}
-	return s[:maxLen]
 }
