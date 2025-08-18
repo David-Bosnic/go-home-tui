@@ -7,30 +7,37 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 )
 
 type PostEventType struct {
-	Summary string `json:"summary"`
-	Start   struct {
+	Summary  string `json:"summary"`
+	Location string `json:"location,omitempty"`
+	Start    struct {
 		DateTime string `json:"dateTime"`
-		TimeZone string `json:"timeZone,omitempty"`
 	} `json:"start"`
 	End struct {
 		DateTime string `json:"dateTime"`
-		TimeZone string `json:"timeZone,omitempty"`
 	} `json:"end"`
 }
 
 func (config *apiConfig) handlerEventsPost(w http.ResponseWriter, r *http.Request) {
 	url := fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/%s/events", config.calendarID)
-	newEvent := PostEventType{
-		Summary: "Test Event",
+
+	var event Event
+	err := json.NewDecoder(r.Body).Decode(&event)
+	if err != nil {
+		log.Printf("POST /calendar/events Error Decoding event %v\n", err)
+		http.Error(w, "Failed to decode calendar event", http.StatusBadRequest)
+		return
 	}
-	newEvent.Start.DateTime = "2025-08-01T10:00:00-06:00"
+	var postEvent PostEventType
+	postEvent.Summary = event.Summary
+	postEvent.Location = event.Location
+	postEvent.Start.DateTime = event.Start.DateTime.Format(time.RFC3339)
+	postEvent.End.DateTime = event.End.DateTime.Format(time.RFC3339)
 
-	newEvent.End.DateTime = "2025-08-01T11:00:00-06:00"
-
-	payload, err := json.Marshal(newEvent)
+	payload, err := json.Marshal(postEvent)
 	if err != nil {
 		log.Printf("POST /calendar/events Error marshaling event %v\n", err)
 		http.Error(w, "Failed to parse calendar event", http.StatusInternalServerError)

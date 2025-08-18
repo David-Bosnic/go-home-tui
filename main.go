@@ -31,16 +31,17 @@ type Point struct {
 }
 
 type Model struct {
-	spinner     spinner.Model
-	events      []Event
-	cursor      Point
-	point       Point
-	selected    map[Point]struct{}
-	eventMatrix [][]Event
-	mode        string
-	inputs      []textinput.Model
-	focusIndex  int
-	flipState   bool
+	spinner      spinner.Model
+	events       []Event
+	cursor       Point
+	point        Point
+	selected     map[Point]struct{}
+	eventMatrix  [][]Event
+	mode         string
+	inputs       []textinput.Model
+	focusIndex   int
+	showLocation bool
+	newEvent     bool
 }
 
 const (
@@ -196,7 +197,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 			case "f":
-				m.flipState = !m.flipState
+				m.showLocation = !m.showLocation
 
 			case " ", "enter":
 				_, ok := m.selected[Point{x: m.cursor.x, y: m.cursor.y}]
@@ -223,6 +224,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 	if m.mode == "forms" {
+		var newEvent Event
+		newEvent.Summary = "+"
+		if m.eventMatrix[m.cursor.y][m.cursor.y] == newEvent {
+			m.newEvent = true
+		}
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch msg.String() {
@@ -236,30 +242,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						log.Println("Invalid forms:", err)
 						return m, nil
 					}
-					var updatedEvent Event
-					updatedEvent.Id = m.inputs[Id].Value()
-					updatedEvent.Start.Date = m.inputs[Date].Value()
+					var currentEvent Event
+					currentEvent.Id = m.inputs[Id].Value()
+					currentEvent.Start.Date = m.inputs[Date].Value()
 
-					//TODO: Remove const
 					formatedStartTime := fmt.Sprintf("%sT%s:00-06:00", m.inputs[Date].Value(), m.inputs[StartTime].Value())
-					updatedEvent.Start.DateTime, err = time.Parse(time.RFC3339, formatedStartTime)
+					currentEvent.Start.DateTime, err = time.Parse(time.RFC3339, formatedStartTime)
 					if err != nil {
 						log.Fatal(err)
 					}
 					formatedEndTime := fmt.Sprintf("%sT%s:00-06:00", m.inputs[Date].Value(), m.inputs[EndTime].Value())
-					updatedEvent.End.DateTime, err = time.Parse(time.RFC3339, formatedEndTime)
+					currentEvent.End.DateTime, err = time.Parse(time.RFC3339, formatedEndTime)
 					if err != nil {
 						log.Fatal(err)
 					}
 
-					updatedEvent.Summary = m.inputs[Summary].Value()
-					updatedEvent.Location = m.inputs[Location].Value()
+					currentEvent.Summary = m.inputs[Summary].Value()
+					currentEvent.Location = m.inputs[Location].Value()
 
-					err = UpdateEvent(updatedEvent)
+					if m.newEvent == true {
+						err = PostEvent(currentEvent)
+					} else {
+						err = UpdateEvent(currentEvent)
+					}
 					if err != nil {
 						log.Println("Failed to update Event:", err)
 					}
-					m.eventMatrix[m.cursor.y][m.cursor.x] = updatedEvent
+					m.eventMatrix[m.cursor.y][m.cursor.x] = currentEvent
+					m.newEvent = false
 					m.mode = "calendar"
 					return m, nil
 				} else if s == "enter" && m.focusIndex == len(m.inputs) {
@@ -305,6 +315,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 
 }
+
 func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 	cmds := make([]tea.Cmd, len(m.inputs))
 	for i := range m.inputs {
@@ -366,7 +377,7 @@ func (m Model) View() string {
 						rowEventsTitle = append(rowEventsTitle, hoverAddEventStyle.Render(event.Summary))
 					default:
 						//TODO: Maybe truncate super long event names
-						if !m.flipState {
+						if !m.showLocation {
 							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(Truncate(event.Summary, 35, false), event.Start.DateTime.Format("15:04")+"-"+event.End.DateTime.Format("15:04")))
 						} else {
 							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Location))

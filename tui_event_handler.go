@@ -9,12 +9,16 @@ import (
 	"os"
 )
 
-func PostEvent() {
-	_, err := http.Post("http://localhost:8080/calendar/events", "", nil)
+func PostEvent(event Event) error {
+	payload, err := json.Marshal(event)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return err
 	}
+	_, err = http.Post("http://localhost:8080/calendar/events", "", bytes.NewBuffer(payload))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func UpdateEvent(event Event) error {
