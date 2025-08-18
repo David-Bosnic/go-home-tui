@@ -19,7 +19,31 @@ func GetDaysStartingToday() []string {
 	today := int(time.Now().Weekday())
 	return append(allDays[today:], allDays[:today]...)
 }
+func CreateEventMatrix(events []Event) [][]Event {
+	rows := EventRowCount(events)
+	cols := 7
+	eventMatrix := make([][]Event, rows)
 
+	for i := range eventMatrix {
+		eventMatrix[i] = make([]Event, cols)
+	}
+
+	dayMap := make(map[int]int)
+	for _, event := range events {
+		eventIndex := DateToIndex(event.Start.Date)
+		if eventIndex >= 0 && eventIndex < cols && dayMap[eventIndex] < rows {
+			eventMatrix[dayMap[eventIndex]][eventIndex] = event
+			dayMap[eventIndex]++
+		}
+	}
+
+	addEventCards := make([]Event, 7)
+	for i := range addEventCards {
+		addEventCards[i].Summary = "+"
+	}
+	eventMatrix = append([][]Event{addEventCards}, eventMatrix...)
+	return eventMatrix
+}
 func EventRowCount(events []Event) int {
 	countMap := make(map[int]int)
 	maxCount := 0

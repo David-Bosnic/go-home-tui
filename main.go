@@ -79,9 +79,9 @@ var (
 
 	cardEventStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder(), true, true, false, true).
-			Align(lipgloss.Center).
 			Width(15).
-			Height(5)
+			Height(5).
+			Align(lipgloss.Center)
 
 	emptyEventStyle = lipgloss.NewStyle().
 			PaddingRight(8).
@@ -121,30 +121,7 @@ func initialModel(events []Event) Model {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-
-	rows := EventRowCount(events)
-	cols := 7
-	eventMatrix := make([][]Event, rows)
-
-	for i := range eventMatrix {
-		eventMatrix[i] = make([]Event, cols)
-	}
-
-	dayMap := make(map[int]int)
-	for _, event := range events {
-		eventIndex := DateToIndex(event.Start.Date)
-		if eventIndex >= 0 && eventIndex < cols && dayMap[eventIndex] < rows {
-			eventMatrix[dayMap[eventIndex]][eventIndex] = event
-			dayMap[eventIndex]++
-		}
-	}
-
-	addEventCards := make([]Event, 7)
-	for i := range addEventCards {
-		addEventCards[i].Summary = "+"
-	}
-	eventMatrix = append([][]Event{addEventCards}, eventMatrix...)
-
+	eventMatrix := CreateEventMatrix(events)
 	m := Model{
 		spinner:     s,
 		events:      events,
@@ -268,7 +245,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if err != nil {
 						log.Println("Failed to update Event:", err)
 					}
-					m.eventMatrix[m.cursor.y][m.cursor.x] = currentEvent
+					events := GetEvents()
+					m.eventMatrix = CreateEventMatrix(events)
 					m.newEvent = false
 					m.mode = "calendar"
 					return m, nil
@@ -324,7 +302,6 @@ func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 
 	return tea.Batch(cmds...)
 }
-
 func (m Model) View() string {
 	var s string
 	switch m.mode {
@@ -378,7 +355,7 @@ func (m Model) View() string {
 					default:
 						//TODO: Maybe truncate super long event names
 						if !m.showLocation {
-							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(Truncate(event.Summary, 35, false), event.Start.DateTime.Format("15:04")+"-"+event.End.DateTime.Format("15:04")))
+							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(Truncate(event.Summary, 35, false), "\n"+event.Start.DateTime.Format("15:04")+"-"+event.End.DateTime.Format("15:04")))
 						} else {
 							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Location))
 						}
@@ -406,7 +383,6 @@ func (m Model) View() string {
 	}
 	return s
 }
-
 func main() {
 	RefreshOauth()
 	events := GetEvents()
