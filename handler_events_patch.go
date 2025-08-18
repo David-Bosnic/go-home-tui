@@ -7,9 +7,20 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 )
 
-// BUG: Patching does not work on some events (getting 400)
+type PatchEventType struct {
+	Summary  string `json:"summary"`
+	Location string `json:"location,omitempty"`
+	Start    struct {
+		DateTime string `json:"dateTime"`
+	} `json:"start"`
+	End struct {
+		DateTime string `json:"dateTime"`
+	} `json:"end"`
+}
+
 func (config *apiConfig) handlerEventsPatch(w http.ResponseWriter, r *http.Request) {
 	var event Event
 	err := json.NewDecoder(r.Body).Decode(&event)
@@ -18,7 +29,13 @@ func (config *apiConfig) handlerEventsPatch(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "Failed to decode calendar event", http.StatusBadRequest)
 		return
 	}
-	payload, err := json.Marshal(event)
+	var patchEvent PatchEventType
+	patchEvent.Summary = event.Summary
+	patchEvent.Location = event.Location
+	patchEvent.Start.DateTime = event.Start.DateTime.Format(time.RFC3339)
+	patchEvent.End.DateTime = event.End.DateTime.Format(time.RFC3339)
+
+	payload, err := json.Marshal(patchEvent)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -45,6 +45,7 @@ type Model struct {
 
 const (
 	Summary = iota
+	Date
 	StartTime
 	EndTime
 	Location
@@ -149,7 +150,7 @@ func initialModel(events []Event) Model {
 		selected:    make(map[Point]struct{}),
 		eventMatrix: eventMatrix,
 		mode:        "calendar",
-		inputs:      make([]textinput.Model, 6),
+		inputs:      make([]textinput.Model, 7),
 	}
 	var t textinput.Model
 	for i := range m.inputs {
@@ -206,10 +207,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.focusIndex = 0
 					event := m.eventMatrix[m.cursor.y][m.cursor.x]
 					m.inputs[0].SetValue(event.Summary)
-					m.inputs[1].SetValue(event.Start.DateTime.Format("15:04"))
-					m.inputs[2].SetValue(event.End.DateTime.Format("15:04"))
-					m.inputs[3].SetValue(event.Location)
-					m.inputs[4].SetValue(event.Id)
+					m.inputs[1].SetValue(event.Start.Date)
+					m.inputs[2].SetValue(event.Start.DateTime.Format("15:04"))
+					m.inputs[3].SetValue(event.End.DateTime.Format("15:04"))
+					m.inputs[4].SetValue(event.Location)
+					m.inputs[5].SetValue(event.Id)
 					m.selected[Point{x: m.cursor.x, y: m.cursor.y}] = struct{}{}
 				}
 			}
@@ -236,11 +238,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 					var updatedEvent Event
 					updatedEvent.Id = m.inputs[Id].Value()
-					updatedEvent.Start.DateTime, err = time.Parse(time.RFC3339, m.inputs[StartTime].Value())
+					updatedEvent.Start.Date = m.inputs[Date].Value()
+
+					//TODO: Remove const
+					formatedStartTime := fmt.Sprintf("%sT%s:00-06:00", m.inputs[Date].Value(), m.inputs[StartTime].Value())
+					updatedEvent.Start.DateTime, err = time.Parse(time.RFC3339, formatedStartTime)
 					if err != nil {
 						log.Fatal(err)
 					}
-					updatedEvent.End.DateTime, err = time.Parse(time.RFC3339, m.inputs[EndTime].Value())
+					formatedEndTime := fmt.Sprintf("%sT%s:00-06:00", m.inputs[Date].Value(), m.inputs[EndTime].Value())
+					updatedEvent.End.DateTime, err = time.Parse(time.RFC3339, formatedEndTime)
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -311,7 +318,7 @@ func (m Model) View() string {
 	var s string
 	switch m.mode {
 	case "forms":
-		labels := []string{"Event:", "Start Time:", "End Time:", "Location:", "Id: "}
+		labels := []string{"Event:", "Date:", "Start Time:", "End Time:", "Location:", "Id: "}
 		for i := range labels {
 			s += labels[i] + "\n" + m.inputs[i].View()
 			if i < len(m.inputs)-1 {

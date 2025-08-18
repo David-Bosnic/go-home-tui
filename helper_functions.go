@@ -54,11 +54,11 @@ func DateToIndex(date string) int {
 func FormsValidation(inputs []textinput.Model) error {
 	startTime := inputs[StartTime].Value()
 	endTime := inputs[EndTime].Value()
-	_, err := time.Parse(time.RFC3339, startTime)
+	_, err := time.Parse("15:04", startTime)
 	if err != nil {
 		return err
 	}
-	_, err = time.Parse(time.RFC3339, endTime)
+	_, err = time.Parse("15:04", endTime)
 	if err != nil {
 		return err
 	}
