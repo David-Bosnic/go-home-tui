@@ -69,6 +69,9 @@ var (
 	blurredDeleteButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Delete"))
 	focusedDeleteButton = focusedStyle.Render("[ Delete ]")
 
+	grayBlurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
+	grayBlurredDeleteButton = grayBlurredStyle.Render("[ Delete ]")
+
 	dayStyle = lipgloss.NewStyle().
 			PaddingRight(7).
 			PaddingLeft(7).
@@ -270,6 +273,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.focusIndex++
 				}
 
+				if m.focusIndex > len(m.inputs)-1 && m.newEvent {
+					m.focusIndex = 0
+				} else if m.focusIndex < 0 && m.newEvent {
+					m.focusIndex = len(m.inputs) - 1
+				}
+
 				if m.focusIndex > len(m.inputs) {
 					m.focusIndex = 0
 				} else if m.focusIndex < 0 {
@@ -332,9 +341,15 @@ func (m Model) View() string {
 			cancelButton = &focusedCancelButton
 		}
 
-		deleteButton := &blurredDeleteButton
-		if m.focusIndex == len(m.inputs) {
-			deleteButton = &focusedDeleteButton
+		var deleteButton *string
+		if m.newEvent {
+			deleteButton = &grayBlurredDeleteButton
+		} else {
+			deleteButton = &blurredDeleteButton
+			if m.focusIndex == len(m.inputs) {
+				deleteButton = &focusedDeleteButton
+			}
+
 		}
 		var b strings.Builder
 		fmt.Fprintf(&b, "\n\n%s %s %s \n\n", *submitButton, *cancelButton, *deleteButton)
@@ -342,10 +357,7 @@ func (m Model) View() string {
 	case "loading":
 		s += fmt.Sprintf("Loading %s", m.spinner.View())
 	case "calendar":
-		s += whiteText.Render("Current Event:", m.eventMatrix[m.cursor.y][m.cursor.x].Summary)
-		s += "\n\n"
-		s += whiteText.Render(fmt.Sprintf("Row: %d, y: %d x: %d", len(m.eventMatrix), m.cursor.y, m.cursor.x))
-		s += "\n\n"
+		s += "\n"
 
 		styledDays := GetDaysStartingToday()
 		for i := range styledDays {
