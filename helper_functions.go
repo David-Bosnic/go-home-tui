@@ -97,7 +97,3 @@ func Truncate(s string, maxLen int, elipse bool) string {
 	}
 	return s[:maxLen]
 }
-
-func EventTimeFormatter(t string) int {
-	return time.Time.Day(time.Now())
-}

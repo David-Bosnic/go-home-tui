@@ -66,6 +66,9 @@ var (
 	blurredCancelButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Cancel"))
 	focusedCancelButton = focusedStyle.Render("[ Cancel ]")
 
+	blurredDeleteButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Delete"))
+	focusedDeleteButton = focusedStyle.Render("[ Delete ]")
+
 	dayStyle = lipgloss.NewStyle().
 			PaddingRight(7).
 			PaddingLeft(7).
@@ -97,7 +100,6 @@ var (
 				Inherit(cardEventStyle)
 
 	hoverEmptyEventStyle = lipgloss.NewStyle().
-				BorderForeground(lipgloss.Color("#6495ED")).
 				Inherit(emptyEventStyle)
 
 	hovered = lipgloss.NewStyle().
@@ -128,7 +130,7 @@ func initialModel(events []Event) Model {
 		selected:    make(map[Point]struct{}),
 		eventMatrix: eventMatrix,
 		mode:        "calendar",
-		inputs:      make([]textinput.Model, 7),
+		inputs:      make([]textinput.Model, 8),
 	}
 	var t textinput.Model
 	for i := range m.inputs {
@@ -213,7 +215,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			case "tab", "shift+tab", "enter", "up", "down":
 				s := msg.String()
-				if s == "enter" && m.focusIndex == len(m.inputs)-1 {
+				if s == "enter" && m.focusIndex == len(m.inputs)-2 {
 					err := FormsValidation(m.inputs)
 					if err != nil {
 						log.Println("Invalid forms:", err)
@@ -245,12 +247,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if err != nil {
 						log.Println("Failed to update Event:", err)
 					}
-					events := GetEvents()
-					m.eventMatrix = CreateEventMatrix(events)
+					m.events = GetEvents()
+					m.eventMatrix = CreateEventMatrix(m.events)
 					m.newEvent = false
 					m.mode = "calendar"
 					return m, nil
+				} else if s == "enter" && m.focusIndex == len(m.inputs)-1 {
+					m.mode = "calendar"
 				} else if s == "enter" && m.focusIndex == len(m.inputs) {
+					DeleteEvent(m.eventMatrix[m.cursor.y][m.cursor.x])
+					m.cursor.y -= 1
+					m.events = GetEvents()
+					m.eventMatrix = CreateEventMatrix(m.events)
 					m.mode = "calendar"
 				}
 
@@ -315,21 +323,28 @@ func (m Model) View() string {
 		}
 
 		submitButton := &blurredSubmitButton
-		if m.focusIndex == len(m.inputs)-1 {
+		if m.focusIndex == len(m.inputs)-2 {
 			submitButton = &focusedSubmitButton
 		}
 
 		cancelButton := &blurredCancelButton
-		if m.focusIndex == len(m.inputs) {
+		if m.focusIndex == len(m.inputs)-1 {
 			cancelButton = &focusedCancelButton
 		}
+
+		deleteButton := &blurredDeleteButton
+		if m.focusIndex == len(m.inputs) {
+			deleteButton = &focusedDeleteButton
+		}
 		var b strings.Builder
-		fmt.Fprintf(&b, "\n\n%s  %s\n\n", *submitButton, *cancelButton)
+		fmt.Fprintf(&b, "\n\n%s %s %s \n\n", *submitButton, *cancelButton, *deleteButton)
 		s += b.String()
 	case "loading":
 		s += fmt.Sprintf("Loading %s", m.spinner.View())
 	case "calendar":
 		s += whiteText.Render("Current Event:", m.eventMatrix[m.cursor.y][m.cursor.x].Summary)
+		s += "\n\n"
+		s += whiteText.Render(fmt.Sprintf("Row: %d, y: %d x: %d", len(m.eventMatrix), m.cursor.y, m.cursor.x))
 		s += "\n\n"
 
 		styledDays := GetDaysStartingToday()

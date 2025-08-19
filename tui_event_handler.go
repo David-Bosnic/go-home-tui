@@ -21,6 +21,25 @@ func PostEvent(event Event) error {
 	return nil
 }
 
+func DeleteEvent(event Event) error {
+	payload, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+	client := http.Client{}
+	url := "http://localhost:8080/calendar/events"
+	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return nil
+}
+
 func UpdateEvent(event Event) error {
 	payload, err := json.Marshal(event)
 	if err != nil {
