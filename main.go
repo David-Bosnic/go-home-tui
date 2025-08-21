@@ -55,11 +55,11 @@ const (
 
 // Styles
 var (
-	focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#7e9cd8"))
 	cursorStyle  = focusedStyle
 	noStyle      = lipgloss.NewStyle()
 
-	blurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	blurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#7e9cd8"))
 	blurredSubmitButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Submit"))
 	focusedSubmitButton = focusedStyle.Render("[ Submit ]")
 
@@ -95,21 +95,15 @@ var (
 			Align(lipgloss.Center)
 
 	hoverAddEventStyle = lipgloss.NewStyle().
-				BorderForeground(lipgloss.Color("#6495ED")).
+				BorderForeground(lipgloss.Color("#7e9cd8")).
 				Inherit(addEventStyle)
 
 	hoverCardEventStyle = lipgloss.NewStyle().
-				BorderForeground(lipgloss.Color("#6495ED")).
+				BorderForeground(lipgloss.Color("#7e9cd8")).
 				Inherit(cardEventStyle)
 
 	hoverEmptyEventStyle = lipgloss.NewStyle().
 				Inherit(emptyEventStyle)
-
-	hovered = lipgloss.NewStyle().
-		Height(8).
-		BorderBottom(true).
-		BorderForeground(lipgloss.Color("#6495ED")).
-		Inherit(cardEventStyle)
 
 	whiteText = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FAFAFA"))
