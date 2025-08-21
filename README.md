@@ -1,1 +1,1 @@
-### ⚠️ Best Google calendar api wrapper in the works ⚠️
+### ⚠️ Best Google calendar tui in the works ⚠️
