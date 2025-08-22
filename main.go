@@ -374,9 +374,10 @@ func (m Model) View() string {
 					case "+":
 						rowEventsTitle = append(rowEventsTitle, hoverAddEventStyle.Render(event.Summary))
 					default:
-						//TODO: Maybe truncate super long event names
 						if !m.showLocation {
-							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(Truncate(event.Summary, 35, false), "\n"+event.Start.DateTime.Format("15:04")+"-"+event.End.DateTime.Format("15:04")))
+							start := event.Start.DateTime.Format("15:04")
+							end := event.End.DateTime.Format("15:04")
+							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Summary+"\n"+start+"-"+end))
 						} else {
 							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Location))
 						}
@@ -389,7 +390,7 @@ func (m Model) View() string {
 					case "+":
 						rowEventsTitle = append(rowEventsTitle, addEventStyle.Render((event.Summary)))
 					default:
-						rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(Truncate(event.Summary, 26, true)))
+						rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(Truncate(event.Summary, 28, true)))
 					}
 
 				}
