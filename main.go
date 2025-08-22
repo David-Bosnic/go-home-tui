@@ -184,7 +184,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.focusIndex = 0
 					event := m.eventMatrix[m.cursor.y][m.cursor.x]
 					m.inputs[0].SetValue(event.Summary)
-					m.inputs[1].SetValue(event.Start.Date)
+					if event.Start.Date == "" {
+						m.inputs[1].SetValue(NewEventDate(m.cursor.x))
+					} else {
+						m.inputs[1].SetValue(event.Start.Date)
+
+					}
 					m.inputs[2].SetValue(event.Start.DateTime.Format("15:04"))
 					m.inputs[3].SetValue(event.End.DateTime.Format("15:04"))
 					m.inputs[4].SetValue(event.Location)

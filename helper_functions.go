@@ -97,3 +97,9 @@ func Truncate(s string, maxLen int, elipse bool) string {
 	}
 	return s[:maxLen]
 }
+
+func NewEventDate(i int) string {
+	now := time.Now()
+	eventDate := now.AddDate(0, 0, i)
+	return eventDate.Format("2006-01-02")
+}
