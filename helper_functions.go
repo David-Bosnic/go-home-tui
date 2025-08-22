@@ -75,18 +75,31 @@ func DateToIndex(date string) int {
 
 	return days
 }
-func FormsValidation(inputs []textinput.Model) error {
+func FormsValidation(inputs []textinput.Model, validFields *[]bool) bool {
+	for i := range *validFields {
+		(*validFields)[i] = true
+	}
+	var invalid bool
+	date := inputs[Date].Value()
 	startTime := inputs[StartTime].Value()
 	endTime := inputs[EndTime].Value()
-	_, err := time.Parse("15:04", startTime)
+
+	_, err := time.Parse("2006-01-02", date)
 	if err != nil {
-		return err
+		(*validFields)[Date] = false
+		invalid = true
+	}
+	_, err = time.Parse("15:04", startTime)
+	if err != nil {
+		(*validFields)[StartTime] = false
+		invalid = true
 	}
 	_, err = time.Parse("15:04", endTime)
 	if err != nil {
-		return err
+		(*validFields)[EndTime] = false
+		invalid = true
 	}
-	return nil
+	return invalid
 }
 func Truncate(s string, maxLen int, elipse bool) string {
 	if len(s) <= maxLen {

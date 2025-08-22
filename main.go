@@ -42,6 +42,7 @@ type Model struct {
 	focusIndex   int
 	showLocation bool
 	newEvent     bool
+	validFields  []bool
 }
 
 const (
@@ -128,6 +129,7 @@ func initialModel(events []Event) Model {
 		eventMatrix: eventMatrix,
 		mode:        "calendar",
 		inputs:      make([]textinput.Model, 8),
+		validFields: make([]bool, 8),
 	}
 	var t textinput.Model
 	for i := range m.inputs {
@@ -135,6 +137,7 @@ func initialModel(events []Event) Model {
 		t.Cursor.Style = cursorStyle
 
 		m.inputs[i] = t
+		m.validFields[i] = true
 	}
 
 	return m
@@ -222,11 +225,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "tab", "shift+tab", "enter", "up", "down":
 				s := msg.String()
 				if s == "enter" && m.focusIndex == len(m.inputs)-2 {
-					err := FormsValidation(m.inputs)
-					if err != nil {
-						log.Println("Invalid forms:", err)
+					if FormsValidation(m.inputs, &m.validFields) {
 						return m, nil
 					}
+					var err error
 					var currentEvent Event
 					currentEvent.Id = m.inputs[Id].Value()
 					currentEvent.Start.Date = m.inputs[Date].Value()
@@ -260,12 +262,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.mode = "calendar"
 					return m, nil
 				} else if s == "enter" && m.focusIndex == len(m.inputs)-1 {
+					for i := range m.validFields {
+						m.validFields[i] = true
+					}
 					m.mode = "calendar"
 				} else if s == "enter" && m.focusIndex == len(m.inputs) {
 					DeleteEvent(m.eventMatrix[m.cursor.y][m.cursor.x])
 					m.cursor.y -= 1
 					m.events = GetEvents()
 					m.eventMatrix = CreateEventMatrix(m.events)
+					for i := range m.validFields {
+						m.validFields[i] = true
+					}
 					m.mode = "calendar"
 				}
 
@@ -329,7 +337,12 @@ func (m Model) View() string {
 	case "forms":
 		labels := []string{"Event:", "Date:", "Start Time:", "End Time:", "Location:", "Id: "}
 		for i := range labels {
-			s += labels[i] + "\n" + m.inputs[i].View()
+			if !m.validFields[i] {
+				s += redText.Render(labels[i] + " Invalid field")
+				s += fmt.Sprintf("\n%s", m.inputs[i].View())
+			} else {
+				s += fmt.Sprintf("%s\n%s", labels[i], m.inputs[i].View())
+			}
 			if i < len(m.inputs)-1 {
 				s += "\n"
 			}
