@@ -183,17 +183,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.mode = "forms"
 					m.focusIndex = 0
 					event := m.eventMatrix[m.cursor.y][m.cursor.x]
-					m.inputs[0].SetValue(event.Summary)
-					if event.Start.Date == "" {
-						m.inputs[1].SetValue(NewEventDate(m.cursor.x))
+					if event.Summary == "+" {
+						m.inputs[Summary].SetValue("")
 					} else {
-						m.inputs[1].SetValue(event.Start.Date)
+						m.inputs[Summary].SetValue(event.Summary)
+					}
+					if event.Start.Date == "" {
+						m.inputs[Date].SetValue(NewEventDate(m.cursor.x))
+					} else {
+						m.inputs[Date].SetValue(event.Start.Date)
 
 					}
-					m.inputs[2].SetValue(event.Start.DateTime.Format("15:04"))
-					m.inputs[3].SetValue(event.End.DateTime.Format("15:04"))
-					m.inputs[4].SetValue(event.Location)
-					m.inputs[5].SetValue(event.Id)
+					m.inputs[StartTime].SetValue(event.Start.DateTime.Format("15:04"))
+					m.inputs[EndTime].SetValue(event.End.DateTime.Format("15:04"))
+					m.inputs[Location].SetValue(event.Location)
+					m.inputs[Id].SetValue(event.Id)
 					m.selected[Point{x: m.cursor.x, y: m.cursor.y}] = struct{}{}
 				}
 			}
@@ -252,6 +256,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.events = GetEvents()
 					m.eventMatrix = CreateEventMatrix(m.events)
 					m.newEvent = false
+					delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
 					m.mode = "calendar"
 					return m, nil
 				} else if s == "enter" && m.focusIndex == len(m.inputs)-1 {
@@ -395,7 +400,7 @@ func (m Model) View() string {
 					case "+":
 						rowEventsTitle = append(rowEventsTitle, addEventStyle.Render((event.Summary)))
 					default:
-						rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(Truncate(event.Summary, 28, true)))
+						rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(Truncate(event.Summary, 25, true)))
 					}
 
 				}
