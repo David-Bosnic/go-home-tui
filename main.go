@@ -265,6 +265,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					for i := range m.validFields {
 						m.validFields[i] = true
 					}
+					m.newEvent = false
 					delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
 					m.mode = "calendar"
 				} else if s == "enter" && m.focusIndex == len(m.inputs) {
@@ -275,6 +276,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					for i := range m.validFields {
 						m.validFields[i] = true
 					}
+					m.newEvent = false
 					delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
 					m.mode = "calendar"
 				}
