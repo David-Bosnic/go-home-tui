@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -25,6 +27,47 @@ type Event struct {
 	Location string   `json:"location"`
 }
 
+type keyMap struct {
+	Up    key.Binding
+	Down  key.Binding
+	Left  key.Binding
+	Right key.Binding
+	Help  key.Binding
+	Flip  key.Binding
+	Quit  key.Binding
+}
+
+var keys = keyMap{
+	Up: key.NewBinding(
+		key.WithKeys("up", "k"),
+		key.WithHelp("↑/k", "move up"),
+	),
+	Flip: key.NewBinding(
+		key.WithKeys("f"),
+		key.WithHelp("f", "toggle location"),
+	),
+	Down: key.NewBinding(
+		key.WithKeys("down", "j"),
+		key.WithHelp("↓/j", "move down"),
+	),
+	Left: key.NewBinding(
+		key.WithKeys("left", "h"),
+		key.WithHelp("←/h", "move left"),
+	),
+	Right: key.NewBinding(
+		key.WithKeys("right", "l"),
+		key.WithHelp("→/l", "move right"),
+	),
+	Help: key.NewBinding(
+		key.WithKeys("?"),
+		key.WithHelp("?", "toggle help"),
+	),
+	Quit: key.NewBinding(
+		key.WithKeys("q", "ctrl+c"),
+		key.WithHelp("q", "quit"),
+	),
+}
+
 type Point struct {
 	x int
 	y int
@@ -33,6 +76,8 @@ type Point struct {
 type Model struct {
 	spinner      spinner.Model
 	events       []Event
+	keys         keyMap
+	help         help.Model
 	cursor       Point
 	point        Point
 	selected     map[Point]struct{}
@@ -129,6 +174,8 @@ func initialModel(events []Event) Model {
 		spinner:     s,
 		events:      events,
 		selected:    make(map[Point]struct{}),
+		keys:        keys,
+		help:        help.New(),
 		eventMatrix: eventMatrix,
 		mode:        "calendar",
 		inputs:      make([]textinput.Model, 8),
@@ -153,11 +200,18 @@ func (m Model) Init() tea.Cmd {
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.mode == "calendar" {
+		m.keys.Flip.SetEnabled(true)
 		switch msg := msg.(type) {
+		case tea.WindowSizeMsg:
+			m.help.Width = msg.Width
+
 		case tea.KeyMsg:
 			switch msg.String() {
 			case "ctrl+c", "q":
 				return m, tea.Quit
+
+			case "?":
+				m.help.ShowAll = !m.help.ShowAll
 
 			case "up", "k":
 				if m.cursor.y > 0 {
@@ -215,6 +269,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 	if m.mode == "forms" {
+		m.keys.Flip.SetEnabled(false)
+		if m.focusIndex < len(m.inputs)-2 {
+			m.keys.Quit.SetEnabled(false)
+			m.keys.Help.SetEnabled(false)
+		} else {
+			m.keys.Quit.SetEnabled(true)
+			m.keys.Help.SetEnabled(true)
+		}
+
 		var newEvent Event
 		newEvent.Summary = "+"
 		if m.eventMatrix[m.cursor.y][m.cursor.y] == newEvent {
@@ -223,7 +286,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch msg.String() {
-			case "ctrl+c", "q":
+
+			case "q":
+				if m.focusIndex < len(m.inputs)-2 {
+					break
+				} else {
+					return m, tea.Quit
+				}
+			case "?":
+				if m.focusIndex < len(m.inputs)-2 {
+					break
+				} else {
+					m.help.ShowAll = !m.help.ShowAll
+				}
+			case "ctrl+c":
 				return m, tea.Quit
 			case "tab", "shift+tab", "enter", "up", "down":
 				s := msg.String()
@@ -443,8 +519,19 @@ func (m Model) View() string {
 			s += "\n"
 		}
 	}
+	s += m.help.View(m.keys)
 	return s
 }
+func (k keyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Help, k.Quit}
+}
+func (k keyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.Up, k.Down, k.Left, k.Right, k.Flip},
+		{k.Help, k.Quit},
+	}
+}
+
 func main() {
 	RefreshOauth()
 	events := GetEvents()
