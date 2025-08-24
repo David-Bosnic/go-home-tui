@@ -32,7 +32,7 @@ func (config *apiConfig) handlerEventsDelete(w http.ResponseWriter, r *http.Requ
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusNoContent {
 		log.Printf("PATCH /calendar/events Error failed with status code %v\n", resp.StatusCode)
 		http.Error(w, "Calendar service error", http.StatusBadGateway)
 		return
