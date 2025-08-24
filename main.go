@@ -59,8 +59,8 @@ var keys = keyMap{
 		key.WithHelp("→/l", "move right"),
 	),
 	Help: key.NewBinding(
-		key.WithKeys("?"),
-		key.WithHelp("?", "toggle help"),
+		key.WithKeys("f1"),
+		key.WithHelp("f1", "toggle help"),
 	),
 	Quit: key.NewBinding(
 		key.WithKeys("q", "ctrl+c"),
@@ -210,7 +210,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "ctrl+c", "q":
 				return m, tea.Quit
 
-			case "?":
+			case "f1":
 				m.help.ShowAll = !m.help.ShowAll
 
 			case "up", "k":
@@ -272,12 +272,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.keys.Flip.SetEnabled(false)
 		if m.focusIndex < len(m.inputs)-2 {
 			m.keys.Quit.SetEnabled(false)
-			m.keys.Help.SetEnabled(false)
 		} else {
 			m.keys.Quit.SetEnabled(true)
-			m.keys.Help.SetEnabled(true)
 		}
-
 		var newEvent Event
 		newEvent.Summary = "+"
 		if m.eventMatrix[m.cursor.y][m.cursor.y] == newEvent {
@@ -293,12 +290,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				} else {
 					return m, tea.Quit
 				}
-			case "?":
-				if m.focusIndex < len(m.inputs)-2 {
-					break
-				} else {
-					m.help.ShowAll = !m.help.ShowAll
-				}
+			case "f1":
+				m.help.ShowAll = !m.help.ShowAll
 			case "ctrl+c":
 				return m, tea.Quit
 			case "tab", "shift+tab", "enter", "up", "down":
@@ -462,7 +455,7 @@ func (m Model) View() string {
 		fmt.Fprintf(&b, "\n\n%s %s %s \n\n", *submitButton, *cancelButton, *deleteButton)
 		s += b.String()
 		if m.areYouSure {
-			s += warningStyle.Render("Are you sure?")
+			s += warningStyle.Render("Are you sure?\n")
 		}
 	case "loading":
 		s += fmt.Sprintf("Loading %s", m.spinner.View())
