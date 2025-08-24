@@ -2,16 +2,17 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"log"
-	"os"
-	"strings"
-	"time"
 )
 
 type DateTime struct {
@@ -36,6 +37,15 @@ type keyMap struct {
 	Flip  key.Binding
 	Quit  key.Binding
 }
+
+type color struct {
+	primary   string
+	secondary string
+	warning   string
+	error     string
+}
+
+var colors = color{}
 
 var keys = keyMap{
 	Up: key.NewBinding(
@@ -102,11 +112,11 @@ const (
 
 // Styles
 var (
-	focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#7e9cd8"))
+	focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(colors.primary))
 	cursorStyle  = focusedStyle
 	noStyle      = lipgloss.NewStyle()
 
-	blurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#7e9cd8"))
+	blurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(colors.primary))
 	blurredSubmitButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Submit"))
 	focusedSubmitButton = focusedStyle.Render("[ Submit ]")
 
@@ -142,11 +152,11 @@ var (
 			Align(lipgloss.Center)
 
 	hoverAddEventStyle = lipgloss.NewStyle().
-				BorderForeground(lipgloss.Color("#7e9cd8")).
+				BorderForeground(lipgloss.Color(colors.primary)).
 				Inherit(addEventStyle)
 
 	hoverCardEventStyle = lipgloss.NewStyle().
-				BorderForeground(lipgloss.Color("#7e9cd8")).
+				BorderForeground(lipgloss.Color(colors.primary)).
 				Inherit(cardEventStyle)
 
 	hoverEmptyEventStyle = lipgloss.NewStyle().
@@ -156,13 +166,16 @@ var (
 			Foreground(lipgloss.Color("#FAFAFA"))
 
 	errorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FF3333"))
+			Foreground(lipgloss.Color(colors.error))
 	warningStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#ffcc00"))
+			Foreground(lipgloss.Color(colors.warning))
 )
 
 func init() {
 	SpinUp()
+	colors.primary = os.Getenv("COLOR_PRIMARY")
+	colors.warning = os.Getenv("COLOR_WARNING")
+	colors.error = os.Getenv("COLOR_ERROR")
 }
 
 func initialModel(events []Event) Model {
@@ -416,6 +429,7 @@ func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 }
 func (m Model) View() string {
 	var s string
+	s += fmt.Sprintf("Here is prime color %s", colors.primary)
 	switch m.mode {
 	case "forms":
 		labels := []string{"Event:", "Date:", "Start Time:", "End Time:", "Location:", "Id: "}
@@ -455,7 +469,7 @@ func (m Model) View() string {
 		fmt.Fprintf(&b, "\n\n%s %s %s \n\n", *submitButton, *cancelButton, *deleteButton)
 		s += b.String()
 		if m.areYouSure {
-			s += warningStyle.Render("Are you sure?\n")
+			s += warningStyle.Render("Are you sure?")
 		}
 	case "loading":
 		s += fmt.Sprintf("Loading %s", m.spinner.View())
@@ -512,6 +526,7 @@ func (m Model) View() string {
 			s += "\n"
 		}
 	}
+	s += "\n"
 	s += m.help.View(m.keys)
 	return s
 }
@@ -526,11 +541,15 @@ func (k keyMap) FullHelp() [][]key.Binding {
 }
 
 func main() {
-	RefreshOauth()
-	events := GetEvents()
-	p := tea.NewProgram(initialModel(events))
-	if _, err := p.Run(); err != nil {
-		fmt.Printf("Alas, there's been an error: %v", err)
-		os.Exit(1)
+	err := RefreshOauth()
+	if err != nil {
+		log.Printf("RefreshOauth")
+	} else {
+		events := GetEvents()
+		p := tea.NewProgram(initialModel(events))
+		if _, err := p.Run(); err != nil {
+			fmt.Printf("Alas, there's been an error: %v", err)
+			os.Exit(1)
+		}
 	}
 }

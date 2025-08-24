@@ -59,12 +59,16 @@ func UpdateEvent(event Event) error {
 	defer resp.Body.Close()
 	return nil
 }
-func RefreshOauth() {
-	_, err := http.Post("http://localhost:8080/admin/refresh", "", nil)
+func RefreshOauth() error {
+	resp, err := http.Post("http://localhost:8080/admin/refresh", "", nil)
 	if err != nil {
-		fmt.Println("Error with post req", err)
-		os.Exit(1)
+		return fmt.Errorf("Failed to connect to local server")
 	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed with status code %s", resp.StatusCode)
+	}
+	return nil
 }
 func GetEvents() []Event {
 	res, err := http.Get("http://localhost:8080/calendar/events")
