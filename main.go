@@ -43,6 +43,7 @@ type Model struct {
 	showLocation bool
 	newEvent     bool
 	validFields  []bool
+	areYouSure   bool
 }
 
 const (
@@ -109,8 +110,10 @@ var (
 	whiteText = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FAFAFA"))
 
-	redText = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FF0000"))
+	errorStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FF3333"))
+	warningStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#ffcc00"))
 )
 
 func init() {
@@ -266,19 +269,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.validFields[i] = true
 					}
 					m.newEvent = false
+					m.areYouSure = false
 					delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
 					m.mode = "calendar"
 				} else if s == "enter" && m.focusIndex == len(m.inputs) {
-					DeleteEvent(m.eventMatrix[m.cursor.y][m.cursor.x])
-					m.cursor.y -= 1
-					m.events = GetEvents()
-					m.eventMatrix = CreateEventMatrix(m.events)
-					for i := range m.validFields {
-						m.validFields[i] = true
+					if !m.areYouSure {
+						m.areYouSure = true
+					} else {
+						DeleteEvent(m.eventMatrix[m.cursor.y][m.cursor.x])
+						m.cursor.y -= 1
+						m.events = GetEvents()
+						m.eventMatrix = CreateEventMatrix(m.events)
+						for i := range m.validFields {
+							m.validFields[i] = true
+						}
+						m.newEvent = false
+						m.areYouSure = false
+						delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
+						m.mode = "calendar"
+
 					}
-					m.newEvent = false
-					delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
-					m.mode = "calendar"
 				}
 
 				if s == "up" || s == "shift+tab" {
@@ -342,7 +352,7 @@ func (m Model) View() string {
 		labels := []string{"Event:", "Date:", "Start Time:", "End Time:", "Location:", "Id: "}
 		for i := range labels {
 			if !m.validFields[i] {
-				s += redText.Render(labels[i] + " Invalid field")
+				s += errorStyle.Render(labels[i] + " Invalid field")
 				s += fmt.Sprintf("\n%s", m.inputs[i].View())
 			} else {
 				s += fmt.Sprintf("%s\n%s", labels[i], m.inputs[i].View())
@@ -375,6 +385,9 @@ func (m Model) View() string {
 		var b strings.Builder
 		fmt.Fprintf(&b, "\n\n%s %s %s \n\n", *submitButton, *cancelButton, *deleteButton)
 		s += b.String()
+		if m.areYouSure {
+			s += warningStyle.Render("Are you sure?")
+		}
 	case "loading":
 		s += fmt.Sprintf("Loading %s", m.spinner.View())
 	case "calendar":
