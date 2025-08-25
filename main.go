@@ -38,15 +38,6 @@ type keyMap struct {
 	Quit  key.Binding
 }
 
-type color struct {
-	primary   string
-	secondary string
-	warning   string
-	error     string
-}
-
-var colors = color{}
-
 var keys = keyMap{
 	Up: key.NewBinding(
 		key.WithKeys("up", "k"),
@@ -110,72 +101,11 @@ const (
 	Id
 )
 
-// Styles
-var (
-	focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(colors.primary))
-	cursorStyle  = focusedStyle
-	noStyle      = lipgloss.NewStyle()
-
-	blurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(colors.primary))
-	blurredSubmitButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Submit"))
-	focusedSubmitButton = focusedStyle.Render("[ Submit ]")
-
-	blurredCancelButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Cancel"))
-	focusedCancelButton = focusedStyle.Render("[ Cancel ]")
-
-	blurredDeleteButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Delete"))
-	focusedDeleteButton = focusedStyle.Render("[ Delete ]")
-
-	grayBlurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
-	grayBlurredDeleteButton = grayBlurredStyle.Render("[ Delete ]")
-
-	dayStyle = lipgloss.NewStyle().
-			PaddingRight(7).
-			PaddingLeft(7).
-			Align(lipgloss.Center)
-
-	addEventStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder(), true, true, false, true).
-			Width(15).
-			Height(1).
-			Align(lipgloss.Center)
-
-	cardEventStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder(), true, true, false, true).
-			Width(15).
-			Height(5).
-			Align(lipgloss.Center)
-
-	emptyEventStyle = lipgloss.NewStyle().
-			PaddingRight(8).
-			PaddingLeft(9).
-			Align(lipgloss.Center)
-
-	hoverAddEventStyle = lipgloss.NewStyle().
-				BorderForeground(lipgloss.Color(colors.primary)).
-				Inherit(addEventStyle)
-
-	hoverCardEventStyle = lipgloss.NewStyle().
-				BorderForeground(lipgloss.Color(colors.primary)).
-				Inherit(cardEventStyle)
-
-	hoverEmptyEventStyle = lipgloss.NewStyle().
-				Inherit(emptyEventStyle)
-
-	whiteText = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FAFAFA"))
-
-	errorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colors.error))
-	warningStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colors.warning))
-)
+var Style Styles
 
 func init() {
 	SpinUp()
-	colors.primary = os.Getenv("COLOR_PRIMARY")
-	colors.warning = os.Getenv("COLOR_WARNING")
-	colors.error = os.Getenv("COLOR_ERROR")
+	Style = SetStyles()
 }
 
 func initialModel(events []Event) Model {
@@ -197,7 +127,7 @@ func initialModel(events []Event) Model {
 	var t textinput.Model
 	for i := range m.inputs {
 		t = textinput.New()
-		t.Cursor.Style = cursorStyle
+		t.Cursor.Style = Style.cursorStyle
 
 		m.inputs[i] = t
 		m.validFields[i] = true
@@ -397,13 +327,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				for i := 0; i <= len(m.inputs)-1; i++ {
 					if i == m.focusIndex {
 						cmds[i] = m.inputs[i].Focus()
-						m.inputs[i].PromptStyle = focusedStyle
-						m.inputs[i].TextStyle = focusedStyle
+						m.inputs[i].PromptStyle = Style.focusedStyle
+						m.inputs[i].TextStyle = Style.focusedStyle
 						continue
 					}
 					m.inputs[i].Blur()
-					m.inputs[i].PromptStyle = noStyle
-					m.inputs[i].TextStyle = noStyle
+					m.inputs[i].PromptStyle = Style.noStyle
+					m.inputs[i].TextStyle = Style.noStyle
 
 				}
 				return m, tea.Batch(cmds...)
@@ -429,13 +359,12 @@ func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 }
 func (m Model) View() string {
 	var s string
-	s += fmt.Sprintf("Here is prime color %s", colors.primary)
 	switch m.mode {
 	case "forms":
 		labels := []string{"Event:", "Date:", "Start Time:", "End Time:", "Location:", "Id: "}
 		for i := range labels {
 			if !m.validFields[i] {
-				s += errorStyle.Render(labels[i] + " Invalid field")
+				s += Style.errorStyle.Render(labels[i] + " Invalid field")
 				s += fmt.Sprintf("\n%s", m.inputs[i].View())
 			} else {
 				s += fmt.Sprintf("%s\n%s", labels[i], m.inputs[i].View())
@@ -445,23 +374,23 @@ func (m Model) View() string {
 			}
 		}
 
-		submitButton := &blurredSubmitButton
+		submitButton := &Style.blurredSubmitButton
 		if m.focusIndex == len(m.inputs)-2 {
-			submitButton = &focusedSubmitButton
+			submitButton = &Style.focusedSubmitButton
 		}
 
-		cancelButton := &blurredCancelButton
+		cancelButton := &Style.blurredCancelButton
 		if m.focusIndex == len(m.inputs)-1 {
-			cancelButton = &focusedCancelButton
+			cancelButton = &Style.focusedCancelButton
 		}
 
 		var deleteButton *string
 		if m.newEvent {
-			deleteButton = &grayBlurredDeleteButton
+			deleteButton = &Style.grayBlurredDeleteButton
 		} else {
-			deleteButton = &blurredDeleteButton
+			deleteButton = &Style.blurredDeleteButton
 			if m.focusIndex == len(m.inputs) {
-				deleteButton = &focusedDeleteButton
+				deleteButton = &Style.focusedDeleteButton
 			}
 
 		}
@@ -469,7 +398,7 @@ func (m Model) View() string {
 		fmt.Fprintf(&b, "\n\n%s %s %s \n\n", *submitButton, *cancelButton, *deleteButton)
 		s += b.String()
 		if m.areYouSure {
-			s += warningStyle.Render("Are you sure?")
+			s += Style.warningStyle.Render("Are you sure?")
 		}
 	case "loading":
 		s += fmt.Sprintf("Loading %s", m.spinner.View())
@@ -478,7 +407,7 @@ func (m Model) View() string {
 
 		styledDays := GetDaysStartingToday()
 		for i := range styledDays {
-			styledDays[i] = dayStyle.Render(styledDays[i])
+			styledDays[i] = Style.dayStyle.Render(styledDays[i])
 		}
 		s += lipgloss.JoinHorizontal(
 			lipgloss.Top,
@@ -493,27 +422,27 @@ func (m Model) View() string {
 				if m.cursor == currentPoint {
 					switch event.Summary {
 					case "":
-						rowEventsTitle = append(rowEventsTitle, hoverEmptyEventStyle.Render(""))
+						rowEventsTitle = append(rowEventsTitle, Style.hoverEmptyEventStyle.Render(""))
 					case "+":
-						rowEventsTitle = append(rowEventsTitle, hoverAddEventStyle.Render(event.Summary))
+						rowEventsTitle = append(rowEventsTitle, Style.hoverAddEventStyle.Render(event.Summary))
 					default:
 						if !m.showLocation {
 							start := event.Start.DateTime.Format("15:04")
 							end := event.End.DateTime.Format("15:04")
-							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Summary+"\n"+start+"-"+end))
+							rowEventsTitle = append(rowEventsTitle, Style.hoverCardEventStyle.Render(event.Summary+"\n"+start+"-"+end))
 						} else {
-							rowEventsTitle = append(rowEventsTitle, hoverCardEventStyle.Render(event.Location))
+							rowEventsTitle = append(rowEventsTitle, Style.hoverCardEventStyle.Render(event.Location))
 						}
 					}
 					continue
 				} else {
 					switch event.Summary {
 					case "":
-						rowEventsTitle = append(rowEventsTitle, emptyEventStyle.Render(""))
+						rowEventsTitle = append(rowEventsTitle, Style.emptyEventStyle.Render(""))
 					case "+":
-						rowEventsTitle = append(rowEventsTitle, addEventStyle.Render((event.Summary)))
+						rowEventsTitle = append(rowEventsTitle, Style.addEventStyle.Render((event.Summary)))
 					default:
-						rowEventsTitle = append(rowEventsTitle, cardEventStyle.Render(Truncate(event.Summary, 25, true)))
+						rowEventsTitle = append(rowEventsTitle, Style.cardEventStyle.Render(Truncate(event.Summary, 25, true)))
 					}
 
 				}
@@ -541,6 +470,7 @@ func (k keyMap) FullHelp() [][]key.Binding {
 }
 
 func main() {
+
 	err := RefreshOauth()
 	if err != nil {
 		log.Printf("RefreshOauth")
