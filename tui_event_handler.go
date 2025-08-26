@@ -66,7 +66,7 @@ func RefreshOauth() error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed with status code %s", resp.StatusCode)
+		return fmt.Errorf("failed with status code %d", resp.StatusCode)
 	}
 	return nil
 }
