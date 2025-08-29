@@ -10,17 +10,6 @@ import (
 	"time"
 )
 
-type PostEventType struct {
-	Summary  string `json:"summary"`
-	Location string `json:"location,omitempty"`
-	Start    struct {
-		DateTime string `json:"dateTime"`
-	} `json:"start"`
-	End struct {
-		DateTime string `json:"dateTime"`
-	} `json:"end"`
-}
-
 func (config *apiConfig) handlerEventsPost(w http.ResponseWriter, r *http.Request) {
 	url := fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/%s/events", config.calendarID)
 

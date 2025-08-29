@@ -126,7 +126,7 @@ func initialModel() Model {
 	apiConf.clientID = os.Getenv("CLIENT_ID")
 	apiConf.clientSecret = os.Getenv("CLIENT_SECRET")
 
-	events, err := GetEvents2(apiConf)
+	events, err := GetEvents(apiConf)
 	if err != nil {
 		os.Exit(1)
 	}
@@ -285,14 +285,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					currentEvent.Location = m.inputs[Location].Value()
 
 					if m.newEvent == true {
-						err = PostEvent2(currentEvent, m.config)
+						err = PostEvent(currentEvent, m.config)
 					} else {
-						err = UpdateEvent(currentEvent)
+						err = UpdateEvent(currentEvent, m.config)
 					}
 					if err != nil {
 						log.Println("Failed to update Event:", err)
 					}
-					m.events, err = GetEvents2(m.config)
+					m.events, err = GetEvents(m.config)
 					if err != nil {
 						os.Exit(1)
 					}
@@ -313,10 +313,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if !m.areYouSure {
 						m.areYouSure = true
 					} else {
-						DeleteEvent2(m.eventMatrix[m.cursor.y][m.cursor.x], m.config)
+						DeleteEvent(m.eventMatrix[m.cursor.y][m.cursor.x], m.config)
 						m.cursor.y -= 1
 						var err error
-						m.events, err = GetEvents2(m.config)
+						m.events, err = GetEvents(m.config)
 						if err != nil {
 							os.Exit(1)
 						}

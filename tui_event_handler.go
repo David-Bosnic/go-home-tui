@@ -7,22 +7,21 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"time"
 )
 
-func PostEvent(event Event) error {
-	payload, err := json.Marshal(event)
-	if err != nil {
-		return err
-	}
-	_, err = http.Post("http://localhost:8080/calendar/events", "", bytes.NewBuffer(payload))
-	if err != nil {
-		return err
-	}
-	return nil
+type PostEventType struct {
+	Summary  string `json:"summary"`
+	Location string `json:"location,omitempty"`
+	Start    struct {
+		DateTime string `json:"dateTime"`
+	} `json:"start"`
+	End struct {
+		DateTime string `json:"dateTime"`
+	} `json:"end"`
 }
-func PostEvent2(event Event, config apiConfig) error {
+
+func PostEvent(event Event, config apiConfig) error {
 	url := fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/%s/events", config.calendarID)
 
 	var postEvent PostEventType
@@ -51,7 +50,7 @@ func PostEvent2(event Event, config apiConfig) error {
 	return nil
 }
 
-func GetEvents2(config apiConfig) ([]Event, error) {
+func GetEvents(config apiConfig) ([]Event, error) {
 	url := fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/%s/events", config.calendarID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -133,7 +132,7 @@ func GetEvents2(config apiConfig) ([]Event, error) {
 
 	return events, nil
 }
-func DeleteEvent2(event Event, config apiConfig) error {
+func DeleteEvent(event Event, config apiConfig) error {
 	client := http.Client{}
 	url := fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/%s/events/%s", config.calendarID, event.Id)
 
@@ -157,44 +156,45 @@ func DeleteEvent2(event Event, config apiConfig) error {
 	return nil
 }
 
-func DeleteEvent(event Event) error {
-	payload, err := json.Marshal(event)
+func UpdateEvent(event Event, config apiConfig) error {
+	var patchEvent PatchEventType
+	patchEvent.Summary = event.Summary
+	patchEvent.Location = event.Location
+	patchEvent.Start.DateTime = event.Start.DateTime.Format(time.RFC3339)
+	patchEvent.End.DateTime = event.End.DateTime.Format(time.RFC3339)
+
+	payload, err := json.Marshal(patchEvent)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 	client := http.Client{}
-	url := "http://localhost:8080/calendar/events"
-	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(payload))
-	if err != nil {
-		return nil
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	return nil
-}
-
-func UpdateEvent(event Event) error {
-	payload, err := json.Marshal(event)
-	if err != nil {
-		return err
-	}
-	client := &http.Client{}
-	url := "http://localhost:8080/calendar/events"
+	url := fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/%s/events/%s", config.calendarID, event.Id)
 
 	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(payload))
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
+	req.Header.Set("Authorization", config.accessToken)
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("PATCH /calendar/events Error failed with status code %v\n with body %v\n", resp.StatusCode, string(body))
 		return err
 	}
-	defer resp.Body.Close()
+
 	return nil
 }
+
 func RefreshOauth() error {
 	resp, err := http.Post("http://localhost:8080/admin/refresh", "", nil)
 	if err != nil {
@@ -205,26 +205,4 @@ func RefreshOauth() error {
 		return fmt.Errorf("failed with status code %d", resp.StatusCode)
 	}
 	return nil
-}
-func GetEvents() []Event {
-	res, err := http.Get("http://localhost:8080/calendar/events")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	var events []Event
-	err = json.Unmarshal(body, &events)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	return events
 }
