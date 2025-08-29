@@ -80,6 +80,11 @@ func FormsValidation(inputs []textinput.Model, validFields *[]bool) bool {
 		(*validFields)[i] = true
 	}
 	var invalid bool
+	summary := inputs[Summary].Value()
+	if summary == "" {
+		(*validFields)[Summary] = false
+		invalid = true
+	}
 	date := inputs[Date].Value()
 	startTime := inputs[StartTime].Value()
 	endTime := inputs[EndTime].Value()
