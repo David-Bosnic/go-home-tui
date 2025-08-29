@@ -133,6 +133,29 @@ func GetEvents2(config apiConfig) ([]Event, error) {
 
 	return events, nil
 }
+func DeleteEvent2(event Event, config apiConfig) error {
+	client := http.Client{}
+	url := fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/%s/events/%s", config.calendarID, event.Id)
+
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req.Header.Set("Authorization", config.accessToken)
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		log.Printf("DELETE /calendar/events Error failed with status code %v\n", resp.StatusCode)
+		return err
+	}
+	return nil
+}
 
 func DeleteEvent(event Event) error {
 	payload, err := json.Marshal(event)

@@ -313,7 +313,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if !m.areYouSure {
 						m.areYouSure = true
 					} else {
-						DeleteEvent(m.eventMatrix[m.cursor.y][m.cursor.x])
+						DeleteEvent2(m.eventMatrix[m.cursor.y][m.cursor.x], m.config)
 						m.cursor.y -= 1
 						var err error
 						m.events, err = GetEvents2(m.config)
