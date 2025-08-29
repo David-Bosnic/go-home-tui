@@ -83,7 +83,7 @@ type Model struct {
 	point        Point
 	selected     map[Point]struct{}
 	eventMatrix  [][]Event
-	mode         string
+	mode         int
 	inputs       []textinput.Model
 	focusIndex   int
 	showLocation bool
@@ -99,6 +99,11 @@ const (
 	EndTime
 	Location
 	Id
+)
+const (
+	calendar = iota
+	loading
+	forms
 )
 
 var Style Styles
@@ -120,7 +125,7 @@ func initialModel(events []Event) Model {
 		keys:        keys,
 		help:        help.New(),
 		eventMatrix: eventMatrix,
-		mode:        "calendar",
+		mode:        calendar,
 		inputs:      make([]textinput.Model, 8),
 		validFields: make([]bool, 8),
 	}
@@ -142,7 +147,7 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
-	if m.mode == "calendar" {
+	if m.mode == calendar {
 		m.keys.Flip.SetEnabled(true)
 		switch msg := msg.(type) {
 		case tea.WindowSizeMsg:
@@ -183,7 +188,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if ok {
 					delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
 				} else {
-					m.mode = "forms"
+					m.mode = forms
 					m.focusIndex = 0
 					event := m.eventMatrix[m.cursor.y][m.cursor.x]
 					if event.Summary == "+" {
@@ -206,12 +211,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	}
-	if m.mode == "loading" {
+	if m.mode == loading {
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	}
-	if m.mode == "forms" {
+	if m.mode == forms {
 		m.keys.Flip.SetEnabled(false)
 		if m.focusIndex < len(m.inputs)-2 {
 			m.keys.Quit.SetEnabled(false)
@@ -274,7 +279,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.eventMatrix = CreateEventMatrix(m.events)
 					m.newEvent = false
 					delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
-					m.mode = "calendar"
+					m.mode = calendar
 					return m, nil
 				} else if s == "enter" && m.focusIndex == len(m.inputs)-1 {
 					for i := range m.validFields {
@@ -283,7 +288,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.newEvent = false
 					m.areYouSure = false
 					delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
-					m.mode = "calendar"
+					m.mode = calendar
 				} else if s == "enter" && m.focusIndex == len(m.inputs) {
 					if !m.areYouSure {
 						m.areYouSure = true
@@ -298,7 +303,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.newEvent = false
 						m.areYouSure = false
 						delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
-						m.mode = "calendar"
+						m.mode = calendar
 
 					}
 				}
@@ -360,7 +365,7 @@ func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 func (m Model) View() string {
 	var s string
 	switch m.mode {
-	case "forms":
+	case forms:
 		labels := []string{"Event:", "Date:", "Start Time:", "End Time:", "Location:", "Id: "}
 		for i := range labels {
 			if !m.validFields[i] {
@@ -400,9 +405,9 @@ func (m Model) View() string {
 		if m.areYouSure {
 			s += Style.warningStyle.Render("Are you sure?")
 		}
-	case "loading":
+	case loading:
 		s += fmt.Sprintf("Loading %s", m.spinner.View())
-	case "calendar":
+	case calendar:
 		s += "\n"
 
 		styledDays := GetDaysStartingToday()
@@ -470,7 +475,6 @@ func (k keyMap) FullHelp() [][]key.Binding {
 }
 
 func main() {
-
 	err := RefreshOauth()
 	if err != nil {
 		log.Printf("RefreshOauth")
