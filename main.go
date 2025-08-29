@@ -99,8 +99,7 @@ const (
 	EndTime
 	Location
 	Id
-)
-const (
+
 	calendar = iota
 	loading
 	forms
