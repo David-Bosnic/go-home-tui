@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/joho/godotenv"
 )
 
 type DateTime struct {
@@ -90,6 +91,7 @@ type Model struct {
 	newEvent     bool
 	validFields  []bool
 	areYouSure   bool
+	config       apiConfig
 }
 
 const (
@@ -108,11 +110,26 @@ const (
 var Style Styles
 
 func init() {
+
 	SpinUp()
 	Style = SetStyles()
 }
 
-func initialModel(events []Event) Model {
+func initialModel() Model {
+
+	godotenv.Load()
+	var apiConf apiConfig
+
+	apiConf.accessToken = "Bearer " + os.Getenv("ACCESS_TOKEN")
+	apiConf.calendarID = os.Getenv("CALENDAR_ID")
+	apiConf.refreshToken = os.Getenv("REFRESH_TOKEN")
+	apiConf.clientID = os.Getenv("CLIENT_ID")
+	apiConf.clientSecret = os.Getenv("CLIENT_SECRET")
+
+	events, err := GetEvents2(apiConf)
+	if err != nil {
+		os.Exit(1)
+	}
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
@@ -127,6 +144,7 @@ func initialModel(events []Event) Model {
 		mode:        calendar,
 		inputs:      make([]textinput.Model, 8),
 		validFields: make([]bool, 8),
+		config:      apiConf,
 	}
 	var t textinput.Model
 	for i := range m.inputs {
@@ -274,7 +292,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if err != nil {
 						log.Println("Failed to update Event:", err)
 					}
-					m.events = GetEvents()
+					m.events, err = GetEvents2(m.config)
+					if err != nil {
+						os.Exit(1)
+					}
 					m.eventMatrix = CreateEventMatrix(m.events)
 					m.newEvent = false
 					delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
@@ -294,7 +315,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					} else {
 						DeleteEvent(m.eventMatrix[m.cursor.y][m.cursor.x])
 						m.cursor.y -= 1
-						m.events = GetEvents()
+						var err error
+						m.events, err = GetEvents2(m.config)
+						if err != nil {
+							os.Exit(1)
+						}
 						m.eventMatrix = CreateEventMatrix(m.events)
 						for i := range m.validFields {
 							m.validFields[i] = true
@@ -478,8 +503,7 @@ func main() {
 	if err != nil {
 		log.Printf("RefreshOauth")
 	} else {
-		events := GetEvents()
-		p := tea.NewProgram(initialModel(events))
+		p := tea.NewProgram(initialModel())
 		if _, err := p.Run(); err != nil {
 			fmt.Printf("Alas, there's been an error: %v", err)
 			os.Exit(1)
