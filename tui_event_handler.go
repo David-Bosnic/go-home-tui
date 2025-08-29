@@ -21,6 +21,17 @@ type PostEventType struct {
 	} `json:"end"`
 }
 
+type PatchEventType struct {
+	Summary  string `json:"summary"`
+	Location string `json:"location,omitempty"`
+	Start    struct {
+		DateTime string `json:"dateTime"`
+	} `json:"start"`
+	End struct {
+		DateTime string `json:"dateTime"`
+	} `json:"end"`
+}
+
 func PostEvent(event Event, config apiConfig) error {
 	url := fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/%s/events", config.calendarID)
 
@@ -49,7 +60,6 @@ func PostEvent(event Event, config apiConfig) error {
 	defer res.Body.Close()
 	return nil
 }
-
 func GetEvents(config apiConfig) ([]Event, error) {
 	url := fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/%s/events", config.calendarID)
 	req, err := http.NewRequest("GET", url, nil)
@@ -155,7 +165,6 @@ func DeleteEvent(event Event, config apiConfig) error {
 	}
 	return nil
 }
-
 func UpdateEvent(event Event, config apiConfig) error {
 	var patchEvent PatchEventType
 	patchEvent.Summary = event.Summary
@@ -194,7 +203,6 @@ func UpdateEvent(event Event, config apiConfig) error {
 
 	return nil
 }
-
 func RefreshOauth() error {
 	resp, err := http.Post("http://localhost:8080/admin/refresh", "", nil)
 	if err != nil {
