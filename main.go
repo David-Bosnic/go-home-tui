@@ -285,7 +285,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					currentEvent.Location = m.inputs[Location].Value()
 
 					if m.newEvent == true {
-						err = PostEvent(currentEvent)
+						err = PostEvent2(currentEvent, m.config)
 					} else {
 						err = UpdateEvent(currentEvent)
 					}

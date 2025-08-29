@@ -22,6 +22,34 @@ func PostEvent(event Event) error {
 	}
 	return nil
 }
+func PostEvent2(event Event, config apiConfig) error {
+	url := fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/%s/events", config.calendarID)
+
+	var postEvent PostEventType
+	postEvent.Summary = event.Summary
+	postEvent.Location = event.Location
+	postEvent.Start.DateTime = event.Start.DateTime.Format(time.RFC3339)
+	postEvent.End.DateTime = event.End.DateTime.Format(time.RFC3339)
+
+	payload, err := json.Marshal(postEvent)
+	if err != nil {
+		log.Printf("POST /calendar/events Error marshaling event %v\n", err)
+		return err
+	}
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	if err != nil {
+		log.Printf("POST /calendar/events Error creating new req %v\n", err)
+		return err
+	}
+	req.Header.Set("Authorization", config.accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Printf("POST /calendar/events Error making request %v\n", err)
+		return err
+	}
+	defer res.Body.Close()
+	return nil
+}
 
 func GetEvents2(config apiConfig) ([]Event, error) {
 	url := fmt.Sprintf("https://www.googleapis.com/calendar/v3/calendars/%s/events", config.calendarID)
