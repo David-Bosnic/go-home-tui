@@ -7,7 +7,11 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
+	"os"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type PostEventType struct {
@@ -203,14 +207,64 @@ func UpdateEvent(event Event, config apiConfig) error {
 
 	return nil
 }
-func RefreshOauth() error {
-	resp, err := http.Post("http://localhost:8080/admin/refresh", "", nil)
+func RefreshOauth(config apiConfig) error {
+	tokenURL := "https://oauth2.googleapis.com/token"
+	clientID := os.Getenv("CLIENT_ID")
+	clientSecret := os.Getenv("CLIENT_SECRET")
+	refreshToken := os.Getenv("REFRESH_TOKEN")
+
+	if clientID == "" || clientSecret == "" || refreshToken == "" {
+		log.Println("POST /auth/refreshToken .env did not match requirements")
+	}
+
+	data := url.Values{}
+	data.Set("client_id", clientID)
+	data.Set("client_secret", clientSecret)
+	data.Set("refresh_token", refreshToken)
+	data.Set("grant_type", "refresh_token")
+
+	req, err := http.NewRequest("POST", tokenURL, bytes.NewBufferString(data.Encode()))
 	if err != nil {
-		return fmt.Errorf("Failed to connect to local server")
+		log.Println("POST /auth/refreshToken failed to create request", err)
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println("POST /auth/refreshToken failed to make request: %w", err)
+		return err
 	}
 	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("POST /auth/refreshToken failed to read response: %w", err)
+		return err
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed with status code %d", resp.StatusCode)
+		log.Printf("POST /auth/refresh token refresh failed with status %d: %s\n", resp.StatusCode, string(body))
+		return err
+	}
+
+	var tokenResp TokenResponse
+	if err := json.Unmarshal(body, &tokenResp); err != nil {
+		log.Println("POST /auth/refresh failed to parse JSON %w", err)
+		return err
+	}
+	config.accessToken = "Bearer " + tokenResp.AccessToken
+	envMap, err := godotenv.Read(".env")
+	if err != nil {
+		log.Fatal("Error reading .env file:", err)
+	}
+	envMap["ACCESS_TOKEN"] = tokenResp.AccessToken
+	err = godotenv.Write(envMap, ".env")
+	if err != nil {
+		log.Fatal("Error writing to .env file:", err)
 	}
 	return nil
 }

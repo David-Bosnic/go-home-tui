@@ -95,7 +95,7 @@ type apiConfig struct {
 	clientSecret string
 }
 
-func corsMiddleware(next http.Handler) http.Handler {
+func CorsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		localHost := "http://localhost:" + os.Getenv("PORT")
 		w.Header().Set("Access-Control-Allow-Origin", localHost)
@@ -126,7 +126,7 @@ func SpinUp() {
 	mux.HandleFunc("POST /admin/refresh", apiConf.refreshAccessTokenPost)
 
 	ServerMux := http.Server{
-		Handler: corsMiddleware(mux),
+		Handler: CorsMiddleware(mux),
 		Addr:    ":8080",
 	}
 
