@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -107,25 +108,21 @@ const (
 	forms
 )
 
+var apiConf apiConfig
+
 var Style Styles
 
 func init() {
-
-	SpinUp()
-	Style = SetStyles()
-}
-
-func initialModel() Model {
-
 	godotenv.Load()
-	var apiConf apiConfig
-
+	Style = SetStyles()
 	apiConf.accessToken = "Bearer " + os.Getenv("ACCESS_TOKEN")
 	apiConf.calendarID = os.Getenv("CALENDAR_ID")
 	apiConf.refreshToken = os.Getenv("REFRESH_TOKEN")
 	apiConf.clientID = os.Getenv("CLIENT_ID")
 	apiConf.clientSecret = os.Getenv("CLIENT_SECRET")
+}
 
+func initialModel() Model {
 	events, err := GetEvents(apiConf)
 	if err != nil {
 		os.Exit(1)
@@ -499,14 +496,23 @@ func (k keyMap) FullHelp() [][]key.Binding {
 }
 
 func main() {
-	err := RefreshOauth()
-	if err != nil {
-		log.Printf("RefreshOauth")
+	authFlag := flag.Bool("auth", false, "Open Google Oauth on the Browser")
+	flag.Parse()
+	if *authFlag {
+		fmt.Println("> Opening Google Oauth using default browser\n> http://localhost:8080/auth/google")
+		OpenUrl("http://localhost:8080/auth/google")
+		OauthSpinUp()
 	} else {
-		p := tea.NewProgram(initialModel())
-		if _, err := p.Run(); err != nil {
-			fmt.Printf("Alas, there's been an error: %v", err)
+		err := RefreshOauth(apiConf)
+		if err != nil {
+			log.Printf("Failed to refresh Oauth %e", err)
 			os.Exit(1)
+		} else {
+			p := tea.NewProgram(initialModel())
+			if _, err := p.Run(); err != nil {
+				fmt.Printf("Alas, there's been an error: %v", err)
+				os.Exit(1)
+			}
 		}
 	}
 }

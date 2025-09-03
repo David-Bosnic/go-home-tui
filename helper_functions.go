@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"os/exec"
+	"runtime"
 	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -115,9 +118,25 @@ func Truncate(s string, maxLen int, elipse bool) string {
 	}
 	return s[:maxLen]
 }
-
 func NewEventDate(i int) string {
 	now := time.Now()
 	eventDate := now.AddDate(0, 0, i)
 	return eventDate.Format("2006-01-02")
+}
+func OpenUrl(url string) error {
+	var err error
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("Unsupported Browser")
+	}
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
+	// "github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
@@ -95,7 +95,7 @@ type apiConfig struct {
 	clientSecret string
 }
 
-func CorsMiddleware(next http.Handler) http.Handler {
+func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		localHost := "http://localhost:" + os.Getenv("PORT")
 		w.Header().Set("Access-Control-Allow-Origin", localHost)
@@ -110,8 +110,7 @@ func CorsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func SpinUp() {
-	godotenv.Load()
+func OauthSpinUp() {
 	var apiConf apiConfig
 	apiConf.accessToken = "Bearer " + os.Getenv("ACCESS_TOKEN")
 	apiConf.calendarID = os.Getenv("CALENDAR_ID")
@@ -123,15 +122,13 @@ func SpinUp() {
 
 	mux.HandleFunc("GET /auth/callback", apiConf.handleOauthCallback)
 	mux.HandleFunc("GET /auth/google", apiConf.startOauthFlow)
-	mux.HandleFunc("POST /admin/refresh", apiConf.refreshAccessTokenPost)
 
 	ServerMux := http.Server{
-		Handler: CorsMiddleware(mux),
+		Handler: corsMiddleware(mux),
 		Addr:    ":8080",
 	}
 
-	fmt.Println("Running Server")
-	go func() {
+	func() {
 		err := ServerMux.ListenAndServe()
 		if err != nil {
 			log.Fatal(err)
