@@ -113,6 +113,7 @@ var apiConf apiConfig
 var style Styles
 
 func init() {
+	godotenv.Load()
 	authFlag := flag.Bool("auth", false, "Open Google Oauth on the Browser")
 	flag.Parse()
 	if *authFlag {
@@ -120,7 +121,6 @@ func init() {
 		OpenUrl("http://localhost:8080/auth/google")
 		OauthSpinUp()
 	} else {
-		godotenv.Load()
 		err := RefreshOauth(apiConf)
 		if err != nil {
 			log.Printf("Failed to refresh Oauth %e", err)
