@@ -257,12 +257,17 @@ func RefreshOauth(config apiConfig) error {
 		return err
 	}
 	config.accessToken = "Bearer " + tokenResp.AccessToken
-	envMap, err := godotenv.Read(".env")
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	url := configDir + "/go-home/.env"
+	envMap, err := godotenv.Read(url)
 	if err != nil {
 		log.Fatal("Error reading .env file:", err)
 	}
 	envMap["ACCESS_TOKEN"] = tokenResp.AccessToken
-	err = godotenv.Write(envMap, ".env")
+	err = godotenv.Write(envMap, url)
 	if err != nil {
 		log.Fatal("Error writing to .env file:", err)
 	}

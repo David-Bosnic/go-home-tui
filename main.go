@@ -91,7 +91,7 @@ type Model struct {
 	showLocation bool
 	newEvent     bool
 	validFields  []bool
-	areYouSure   bool
+	confirm      bool
 	config       apiConfig
 }
 
@@ -113,7 +113,17 @@ var apiConf apiConfig
 var style Styles
 
 func init() {
-	godotenv.Load()
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		os.Exit(1)
+	}
+	url := configDir + "/go-home/.env"
+	err = godotenv.Load(url)
+	if err != nil {
+		createConfig()
+		fmt.Println("Config .env in user config {USER_CONFIG}/go-home/.env")
+		os.Exit(1)
+	}
 	authFlag := flag.Bool("auth", false, "Open Google Oauth on the Browser")
 	flag.Parse()
 	if *authFlag {
@@ -137,6 +147,7 @@ func init() {
 }
 
 func initialModel() Model {
+	fmt.Println("Loading Events...")
 	events, err := GetEvents(apiConf)
 	if err != nil {
 		os.Exit(1)
@@ -316,12 +327,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.validFields[i] = true
 					}
 					m.newEvent = false
-					m.areYouSure = false
+					m.confirm = false
 					delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
 					m.mode = calendar
 				} else if s == "enter" && m.focusIndex == len(m.inputs) {
-					if !m.areYouSure {
-						m.areYouSure = true
+					if !m.confirm {
+						m.confirm = true
 					} else {
 						DeleteEvent(m.eventMatrix[m.cursor.y][m.cursor.x], m.config)
 						m.cursor.y -= 1
@@ -335,7 +346,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							m.validFields[i] = true
 						}
 						m.newEvent = false
-						m.areYouSure = false
+						m.confirm = false
 						delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
 						m.mode = calendar
 
@@ -436,7 +447,7 @@ func (m Model) View() string {
 		var b strings.Builder
 		fmt.Fprintf(&b, "\n\n%s %s %s \n\n", *submitButton, *cancelButton, *deleteButton)
 		s += b.String()
-		if m.areYouSure {
+		if m.confirm {
 			s += style.warningStyle.Render("Are you sure?")
 		}
 	case loading:

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -76,13 +77,19 @@ func (config *apiConfig) handleOauthCallback(w http.ResponseWriter, r *http.Requ
 	config.accessToken = "Bearer " + tokens.AccessToken
 	config.refreshToken = tokens.RefreshToken
 
-	envMap, err := godotenv.Read(".env")
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		http.Error(w, "Faild to get config Dir", http.StatusInternalServerError)
+		return
+	}
+	url := configDir + "/go-home/.env"
+	envMap, err := godotenv.Read(url)
 	if err != nil {
 		log.Fatal("Error reading .env file:", err)
 	}
 	envMap["ACCESS_TOKEN"] = tokens.AccessToken
 	envMap["REFRESH_TOKEN"] = config.refreshToken
-	err = godotenv.Write(envMap, ".env")
+	err = godotenv.Write(envMap, url)
 	if err != nil {
 		log.Fatal("Error writing to .env file:", err)
 	}
