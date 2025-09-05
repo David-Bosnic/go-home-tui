@@ -110,11 +110,25 @@ const (
 
 var apiConf apiConfig
 
-var Style Styles
+var style Styles
 
 func init() {
+	authFlag := flag.Bool("auth", false, "Open Google Oauth on the Browser")
+	flag.Parse()
+	if *authFlag {
+		fmt.Println("> Opening Google Oauth using default browser\n> http://localhost:8080/auth/google")
+		OpenUrl("http://localhost:8080/auth/google")
+		OauthSpinUp()
+	} else {
+		godotenv.Load()
+		err := RefreshOauth(apiConf)
+		if err != nil {
+			log.Printf("Failed to refresh Oauth %e", err)
+			os.Exit(1)
+		}
+	}
 	godotenv.Load()
-	Style = SetStyles()
+	style = SetStyles()
 	apiConf.accessToken = "Bearer " + os.Getenv("ACCESS_TOKEN")
 	apiConf.calendarID = os.Getenv("CALENDAR_ID")
 	apiConf.refreshToken = os.Getenv("REFRESH_TOKEN")
@@ -146,7 +160,7 @@ func initialModel() Model {
 	var t textinput.Model
 	for i := range m.inputs {
 		t = textinput.New()
-		t.Cursor.Style = Style.cursorStyle
+		t.Cursor.Style = style.cursorStyle
 
 		m.inputs[i] = t
 		m.validFields[i] = true
@@ -160,7 +174,6 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-
 	if m.mode == calendar {
 		m.keys.Flip.SetEnabled(true)
 		switch msg := msg.(type) {
@@ -353,13 +366,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				for i := 0; i <= len(m.inputs)-1; i++ {
 					if i == m.focusIndex {
 						cmds[i] = m.inputs[i].Focus()
-						m.inputs[i].PromptStyle = Style.focusedStyle
-						m.inputs[i].TextStyle = Style.focusedStyle
+						m.inputs[i].PromptStyle = style.focusedStyle
+						m.inputs[i].TextStyle = style.focusedStyle
 						continue
 					}
 					m.inputs[i].Blur()
-					m.inputs[i].PromptStyle = Style.noStyle
-					m.inputs[i].TextStyle = Style.noStyle
+					m.inputs[i].PromptStyle = style.noStyle
+					m.inputs[i].TextStyle = style.noStyle
 
 				}
 				return m, tea.Batch(cmds...)
@@ -390,7 +403,7 @@ func (m Model) View() string {
 		labels := []string{"Event:", "Date:", "Start Time:", "End Time:", "Location:", "Id: "}
 		for i := range labels {
 			if !m.validFields[i] {
-				s += Style.errorStyle.Render(labels[i] + " Invalid field")
+				s += style.errorStyle.Render(labels[i] + " Invalid field")
 				s += fmt.Sprintf("\n%s", m.inputs[i].View())
 			} else {
 				s += fmt.Sprintf("%s\n%s", labels[i], m.inputs[i].View())
@@ -400,23 +413,23 @@ func (m Model) View() string {
 			}
 		}
 
-		submitButton := &Style.blurredSubmitButton
+		submitButton := &style.blurredSubmitButton
 		if m.focusIndex == len(m.inputs)-2 {
-			submitButton = &Style.focusedSubmitButton
+			submitButton = &style.focusedSubmitButton
 		}
 
-		cancelButton := &Style.blurredCancelButton
+		cancelButton := &style.blurredCancelButton
 		if m.focusIndex == len(m.inputs)-1 {
-			cancelButton = &Style.focusedCancelButton
+			cancelButton = &style.focusedCancelButton
 		}
 
 		var deleteButton *string
 		if m.newEvent {
-			deleteButton = &Style.grayBlurredDeleteButton
+			deleteButton = &style.grayBlurredDeleteButton
 		} else {
-			deleteButton = &Style.blurredDeleteButton
+			deleteButton = &style.blurredDeleteButton
 			if m.focusIndex == len(m.inputs) {
-				deleteButton = &Style.focusedDeleteButton
+				deleteButton = &style.focusedDeleteButton
 			}
 
 		}
@@ -424,7 +437,7 @@ func (m Model) View() string {
 		fmt.Fprintf(&b, "\n\n%s %s %s \n\n", *submitButton, *cancelButton, *deleteButton)
 		s += b.String()
 		if m.areYouSure {
-			s += Style.warningStyle.Render("Are you sure?")
+			s += style.warningStyle.Render("Are you sure?")
 		}
 	case loading:
 		s += fmt.Sprintf("Loading %s", m.spinner.View())
@@ -433,7 +446,7 @@ func (m Model) View() string {
 
 		styledDays := GetDaysStartingToday()
 		for i := range styledDays {
-			styledDays[i] = Style.dayStyle.Render(styledDays[i])
+			styledDays[i] = style.dayStyle.Render(styledDays[i])
 		}
 		s += lipgloss.JoinHorizontal(
 			lipgloss.Top,
@@ -448,27 +461,27 @@ func (m Model) View() string {
 				if m.cursor == currentPoint {
 					switch event.Summary {
 					case "":
-						rowEventsTitle = append(rowEventsTitle, Style.hoverEmptyEventStyle.Render(""))
+						rowEventsTitle = append(rowEventsTitle, style.hoverEmptyEventStyle.Render(""))
 					case "+":
-						rowEventsTitle = append(rowEventsTitle, Style.hoverAddEventStyle.Render(event.Summary))
+						rowEventsTitle = append(rowEventsTitle, style.hoverAddEventStyle.Render(event.Summary))
 					default:
 						if !m.showLocation {
 							start := event.Start.DateTime.Format("15:04")
 							end := event.End.DateTime.Format("15:04")
-							rowEventsTitle = append(rowEventsTitle, Style.hoverCardEventStyle.Render(event.Summary+"\n"+start+"-"+end))
+							rowEventsTitle = append(rowEventsTitle, style.hoverCardEventStyle.Render(event.Summary+"\n"+start+"-"+end))
 						} else {
-							rowEventsTitle = append(rowEventsTitle, Style.hoverCardEventStyle.Render(event.Location))
+							rowEventsTitle = append(rowEventsTitle, style.hoverCardEventStyle.Render(event.Location))
 						}
 					}
 					continue
 				} else {
 					switch event.Summary {
 					case "":
-						rowEventsTitle = append(rowEventsTitle, Style.emptyEventStyle.Render(""))
+						rowEventsTitle = append(rowEventsTitle, style.emptyEventStyle.Render(""))
 					case "+":
-						rowEventsTitle = append(rowEventsTitle, Style.addEventStyle.Render((event.Summary)))
+						rowEventsTitle = append(rowEventsTitle, style.addEventStyle.Render((event.Summary)))
 					default:
-						rowEventsTitle = append(rowEventsTitle, Style.cardEventStyle.Render(Truncate(event.Summary, 25, true)))
+						rowEventsTitle = append(rowEventsTitle, style.cardEventStyle.Render(Truncate(event.Summary, 25, true)))
 					}
 
 				}
@@ -496,23 +509,9 @@ func (k keyMap) FullHelp() [][]key.Binding {
 }
 
 func main() {
-	authFlag := flag.Bool("auth", false, "Open Google Oauth on the Browser")
-	flag.Parse()
-	if *authFlag {
-		fmt.Println("> Opening Google Oauth using default browser\n> http://localhost:8080/auth/google")
-		OpenUrl("http://localhost:8080/auth/google")
-		OauthSpinUp()
-	} else {
-		err := RefreshOauth(apiConf)
-		if err != nil {
-			log.Printf("Failed to refresh Oauth %e", err)
-			os.Exit(1)
-		} else {
-			p := tea.NewProgram(initialModel())
-			if _, err := p.Run(); err != nil {
-				fmt.Printf("Alas, there's been an error: %v", err)
-				os.Exit(1)
-			}
-		}
+	p := tea.NewProgram(initialModel())
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Alas, there's been an error: %v", err)
+		os.Exit(1)
 	}
 }
