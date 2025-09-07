@@ -126,7 +126,8 @@ func init() {
 	err = godotenv.Load(url)
 	if err != nil {
 		createConfig()
-		fmt.Println("Config .env in user config {USER_CONFIG}/go-home/.env")
+		fmt.Println("Creating Config in user config {USER_CONFIG}/go-home/.env")
+		fmt.Println("Use README.md to config your credentials")
 		os.Exit(1)
 	}
 	authFlag := flag.Bool("auth", false, "Open Google Oauth on the Browser")

@@ -1,4 +1,4 @@
-module go-home
+module go-home-tui
 
 go 1.24.4
 
