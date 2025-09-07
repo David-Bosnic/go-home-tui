@@ -43,10 +43,12 @@ type CalendarEvent struct {
 		} `json:"organizer"`
 		Start struct {
 			DateTime string `json:"dateTime"`
+			Date     string `json:"date"`
 			TimeZone string `json:"timeZone"`
 		} `json:"start"`
 		End struct {
 			DateTime string `json:"dateTime"`
+			Date     string `json:"date"`
 			TimeZone string `json:"timeZone"`
 		} `json:"end"`
 		Transparency string `json:"transparency,omitempty"`
