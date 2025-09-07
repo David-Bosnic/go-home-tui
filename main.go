@@ -95,6 +95,11 @@ type Model struct {
 	config       apiConfig
 }
 
+type eventsLoadedMsg struct {
+	events []Event
+	err    error
+}
+
 const (
 	Summary = iota
 	Date
@@ -180,11 +185,29 @@ func initialModel() Model {
 	return m
 }
 
+func loadEventsCmd(config apiConfig) tea.Cmd {
+	return func() tea.Msg {
+		events, err := GetEvents(config)
+		return eventsLoadedMsg{events: events, err: err}
+	}
+}
+
 func (m Model) Init() tea.Cmd {
 	return tea.Batch(tea.ClearScreen, textinput.Blink, m.spinner.Tick)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case eventsLoadedMsg:
+		if msg.err != nil {
+			return m, tea.Quit
+		}
+		m.events = msg.events
+		m.eventMatrix = CreateEventMatrix(m.events)
+		m.mode = calendar
+		return m, nil
+	}
+
 	if m.mode == calendar {
 		m.keys.Flip.SetEnabled(true)
 		switch msg := msg.(type) {
@@ -313,15 +336,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if err != nil {
 						log.Println("Failed to update Event:", err)
 					}
-					m.events, err = GetEvents(m.config)
-					if err != nil {
-						os.Exit(1)
-					}
-					m.eventMatrix = CreateEventMatrix(m.events)
 					m.newEvent = false
 					delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
-					m.mode = calendar
-					return m, nil
+					m.mode = loading
+					return m, loadEventsCmd(m.config)
 				} else if s == "enter" && m.focusIndex == len(m.inputs)-1 {
 					for i := range m.validFields {
 						m.validFields[i] = true
@@ -336,20 +354,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					} else {
 						DeleteEvent(m.eventMatrix[m.cursor.y][m.cursor.x], m.config)
 						m.cursor.y -= 1
-						var err error
-						m.events, err = GetEvents(m.config)
-						if err != nil {
-							os.Exit(1)
-						}
-						m.eventMatrix = CreateEventMatrix(m.events)
 						for i := range m.validFields {
 							m.validFields[i] = true
 						}
 						m.newEvent = false
 						m.confirm = false
 						delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
-						m.mode = calendar
-
+						m.mode = loading
+						return m, loadEventsCmd(m.config)
 					}
 				}
 
