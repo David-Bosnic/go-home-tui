@@ -82,9 +82,10 @@ func FormsValidation(inputs []textinput.Model, validFields *[]bool) bool {
 	for i := range *validFields {
 		(*validFields)[i] = true
 	}
+
 	var invalid bool
 	summary := inputs[Summary].Value()
-	if summary == "" {
+	if summary == "" || summary == "+" {
 		(*validFields)[Summary] = false
 		invalid = true
 	}
