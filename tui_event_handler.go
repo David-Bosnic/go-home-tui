@@ -117,8 +117,7 @@ func GetEvents(config apiConfig) ([]Event, error) {
 	for _, item := range calendarEvent.Items {
 		var parsedTimeStart, parsedTimeEnd time.Time
 		var err error
-		
-		// Handle timed events (have dateTime) vs all-day events (have date)
+
 		if item.Start.DateTime != "" {
 			parsedTimeStart, err = time.Parse(time.RFC3339, item.Start.DateTime)
 			if err != nil {
@@ -126,7 +125,6 @@ func GetEvents(config apiConfig) ([]Event, error) {
 				return nil, err
 			}
 		} else if item.Start.Date != "" {
-			// All-day events use date format (YYYY-MM-DD)
 			parsedTimeStart, err = time.Parse("2006-01-02", item.Start.Date)
 			if err != nil {
 				log.Printf("GET /calendar/events Error parsing date %v\n", err)
@@ -136,7 +134,7 @@ func GetEvents(config apiConfig) ([]Event, error) {
 			log.Printf("GET /calendar/events Error: no start time or date provided\n")
 			continue
 		}
-		
+
 		if item.End.DateTime != "" {
 			parsedTimeEnd, err = time.Parse(time.RFC3339, item.End.DateTime)
 			if err != nil {
@@ -154,7 +152,7 @@ func GetEvents(config apiConfig) ([]Event, error) {
 			log.Printf("GET /calendar/events Error: no end time or date provided\n")
 			continue
 		}
-		
+
 		_, startZone := parsedTimeStart.Zone()
 		_, endZone := parsedTimeEnd.Zone()
 		events = append(events, Event{

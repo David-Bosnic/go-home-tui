@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/term"
 )
 
 type Styles struct {
@@ -44,6 +45,7 @@ func SetStyles() Styles {
 	colors.primary = os.Getenv("COLOR_PRIMARY")
 	colors.warning = os.Getenv("COLOR_WARNING")
 	colors.error = os.Getenv("COLOR_ERROR")
+	w, _, _ := term.GetSize(os.Stdout.Fd())
 	myStyles := Styles{}
 	myStyles.focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(colors.primary))
 	myStyles.cursorStyle = myStyles.focusedStyle
@@ -63,25 +65,23 @@ func SetStyles() Styles {
 	myStyles.grayBlurredDeleteButton = myStyles.grayBlurredStyle.Render("[ Delete ]")
 
 	myStyles.dayStyle = lipgloss.NewStyle().
-		PaddingRight(7).
-		PaddingLeft(7).
+		Width((w / 8) + 2).
 		Align(lipgloss.Center)
 
 	myStyles.addEventStyle = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder(), true, true, false, true).
-		Width(15).
+		Width(w / 8).
 		Height(1).
 		Align(lipgloss.Center)
-
 	myStyles.cardEventStyle = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder(), true, true, false, true).
-		Width(15).
+		Width(w / 8).
 		Height(5).
 		Align(lipgloss.Center)
 
 	myStyles.emptyEventStyle = lipgloss.NewStyle().
-		PaddingRight(8).
-		PaddingLeft(9).
+		Width((w / 8) + 2).
+		Height(5).
 		Align(lipgloss.Center)
 
 	myStyles.hoverAddEventStyle = lipgloss.NewStyle().
