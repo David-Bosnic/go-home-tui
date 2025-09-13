@@ -469,8 +469,9 @@ func (m Model) View() string {
 		s += "\n"
 
 		styledDays := GetDaysStartingToday()
+		dates := GetDateStartingToday()
 		for i := range styledDays {
-			styledDays[i] = style.dayStyle.Render(styledDays[i])
+			styledDays[i] = style.dayStyle.Render(fmt.Sprint(styledDays[i], "-", dates[i]))
 		}
 		s += lipgloss.JoinHorizontal(
 			lipgloss.Top,

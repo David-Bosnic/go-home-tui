@@ -22,6 +22,16 @@ func GetDaysStartingToday() []string {
 	today := int(time.Now().Weekday())
 	return append(allDays[today:], allDays[:today]...)
 }
+
+func GetDateStartingToday() []int {
+	allDates := []int{}
+	today := time.Now()
+	for i := range 7 {
+		allDates = append(allDates, today.AddDate(0, 0, i).Day())
+	}
+	return allDates
+}
+
 func CreateEventMatrix(events []Event) [][]Event {
 	rows := EventRowCount(events)
 	cols := 7
