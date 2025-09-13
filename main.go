@@ -143,13 +143,6 @@ func init() {
 			os.Exit(1)
 		}
 	}
-	godotenv.Load()
-	style = SetStyles()
-	apiConf.accessToken = "Bearer " + os.Getenv("ACCESS_TOKEN")
-	apiConf.calendarID = os.Getenv("CALENDAR_ID")
-	apiConf.refreshToken = os.Getenv("REFRESH_TOKEN")
-	apiConf.clientID = os.Getenv("CLIENT_ID")
-	apiConf.clientSecret = os.Getenv("CLIENT_SECRET")
 }
 
 func initialModel() Model {
@@ -534,6 +527,13 @@ func (k keyMap) FullHelp() [][]key.Binding {
 }
 
 func main() {
+	godotenv.Load()
+	style = SetStyles()
+	apiConf.accessToken = "Bearer " + os.Getenv("ACCESS_TOKEN")
+	apiConf.calendarID = os.Getenv("CALENDAR_ID")
+	apiConf.refreshToken = os.Getenv("REFRESH_TOKEN")
+	apiConf.clientID = os.Getenv("CLIENT_ID")
+	apiConf.clientSecret = os.Getenv("CLIENT_SECRET")
 	p := tea.NewProgram(initialModel())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
