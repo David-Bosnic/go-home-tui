@@ -42,7 +42,7 @@ a simple way to check up on, lightly edit, and delete events all within the wond
 
    <img width="549" height="402" alt="image" src="https://github.com/user-attachments/assets/8a9c8663-9eaa-4406-9f59-4f236f0c5d52" />
 
-10. When the popup shows you can manually copy both **"Client ID"** and **"Cilent secret"** or download the JSON file. We will need this later
+10. When the popup shows you can manually copy both **"Client ID"** and **"Client secret"** or download the JSON file. We will need this later
 
     <img width="543" height="673" alt="image" src="https://github.com/user-attachments/assets/8ad16955-9479-477c-90de-b6223525837b" />
 
