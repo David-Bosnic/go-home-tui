@@ -61,11 +61,16 @@ a simple way to check up on, lightly edit, and delete events all within the wond
 
 15. Going to you config location
 
-- Windows - %AppData% go-home
-- Mac - /Library/Application Support/go-home
-- Linux - /.config/go-home
+- Windows - %AppData%/go-home/.env
+- Mac - /Library/Application Support/go-home/.env
+- Linux - /.config/go-home/.env
 
 and populate the following
-CALENDAR_ID="myemail@gmail.com"
-CLIENT_ID="from step 10"
-CLIENT_SECRET="from step 10"
+
+- CALENDAR_ID="myemail@gmail.com"
+- CLIENT_ID="from step 10"
+- CLIENT_SECRET="from step 10"
+
+16. Lastly using the flag -a (auth) go through google authentication using the same email as before. Do note
+    it will say the application is not verified, this is the byproduct of again Google assuming this is a large
+    application for many users and we don't really care if it's verified because it's for us

@@ -130,7 +130,7 @@ func init() {
 		fmt.Println("Use README.md to config your credentials")
 		os.Exit(1)
 	}
-	authFlag := flag.Bool("auth", false, "Open Google Oauth on the Browser")
+	authFlag := flag.Bool("a", false, "Open Google Oauth on the Browser")
 	flag.Parse()
 	if *authFlag {
 		fmt.Println("> Opening Google Oauth using default browser\n> http://localhost:8080/auth/google")
