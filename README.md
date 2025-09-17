@@ -7,6 +7,10 @@ just need to know what I need to do today and a bit into the future.
 Using the power of Go and [Bubble Tea](https://github.com/charmbracelet/bubbletea) we have in our hands
 a simple way to check up on, lightly edit, and delete events all within the wonderful world of the terminal.
 
+## Note
+
+go-home is starting to solidify, but again is still needs polish.
+
 ## Setup
 
 0. clone the repo, build, then run it once to populate config files
