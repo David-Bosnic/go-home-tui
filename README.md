@@ -25,6 +25,7 @@ a simple way to check up on, lightly edit, and delete events all within the wond
 5. Scroll down and select **"Google Calendar API"** or type it in the search bar
 
 6. Enable the Google Calendar API service
+
    <img width="484" height="210" alt="image" src="https://github.com/user-attachments/assets/df5e9d95-2b41-437f-8f95-723f4afe4273" />
 
 7. On the left sidebar select **"Credentials"** still within the APIs & Services.
