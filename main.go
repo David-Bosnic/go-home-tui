@@ -117,7 +117,7 @@ var apiConf apiConfig
 
 var style Styles
 
-func init() {
+func setup() {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
 		os.Exit(1)
@@ -527,6 +527,7 @@ func (k keyMap) FullHelp() [][]key.Binding {
 }
 
 func main() {
+	setup()
 	godotenv.Load()
 	style = SetStyles()
 	apiConf.accessToken = "Bearer " + os.Getenv("ACCESS_TOKEN")
