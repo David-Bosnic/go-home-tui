@@ -16,7 +16,7 @@ func main() {
 	apiConf.refreshToken = os.Getenv("REFRESH_TOKEN")
 	apiConf.clientID = os.Getenv("CLIENT_ID")
 	apiConf.clientSecret = os.Getenv("CLIENT_SECRET")
-	p := tea.NewProgram(initialModel())
+	p := tea.NewProgram(InitialModel())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)

@@ -115,7 +115,7 @@ var apiConf apiConfig
 
 var style Styles
 
-func initialModel() Model {
+func InitialModel() Model {
 	fmt.Println("Loading Events...")
 	events, err := GetEvents(apiConf)
 	if err != nil {
