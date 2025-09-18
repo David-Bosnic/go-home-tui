@@ -1,3 +1,5 @@
+## Setup for go-home
+
 0. clone the repo, build, then run it once to populate config files
 
 1. Go to **[GCP](https://console.cloud.google.com/)** logging in to the account which is associated with the google calendar you would like to use.
