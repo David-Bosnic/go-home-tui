@@ -13,4 +13,4 @@ go-home is starting to solidify, but again is still needs polish.
 
 ## Setup
 
-For setup instructions go here [Setup Instructions](https://github.com/david-bosnic/go-home-tui/SETUP.md)
+For setup instructions go here [Setup Instructions](https://github.com/David-Bosnic/go-home-tui/blob/main/SETUP.md)
