@@ -108,16 +108,21 @@ func FormsValidation(inputs []textinput.Model, validFields *[]bool) bool {
 		(*validFields)[Date] = false
 		invalid = true
 	}
-	_, err = time.Parse("15:04", startTime)
+	t1, err := time.Parse("15:04", startTime)
 	if err != nil {
 		(*validFields)[StartTime] = false
 		invalid = true
 	}
-	_, err = time.Parse("15:04", endTime)
+	t2, err := time.Parse("15:04", endTime)
 	if err != nil {
 		(*validFields)[EndTime] = false
 		invalid = true
 	}
+	if t1.Compare(t2) == +1 {
+		(*validFields)[EndTime] = false
+		invalid = true
+	}
+
 	return invalid
 }
 func Truncate(s string, maxLen int, elipse bool) string {
