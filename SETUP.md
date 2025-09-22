@@ -52,7 +52,7 @@
 
 15. Going to you config location
 
-- Windows - %AppData%/go-home/.env
+- Windows - \%AppData%\go-home\.env
 - Mac - /Library/Application Support/go-home/.env
 - Linux - /.config/go-home/.env
 
