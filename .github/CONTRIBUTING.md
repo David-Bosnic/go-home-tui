@@ -7,4 +7,4 @@ but rather a small quick view into what your week looks like.
 
 # Bug Fixes
 
-If you are reporting a bug or creating a pull request, you need to show clear steps before and after so bug relication can be done.
+If you are reporting a bug or creating a pull request, you need to show clear steps before and after so bug replication can be done.
