@@ -1,14 +1,17 @@
 package main
 
-import "os"
+import (
+	"os"
+	"path/filepath"
+)
 
 func createConfig() error {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
 		return err
 	}
-	url := configDir + "/go-home"
-	err = os.MkdirAll(url, 0755)
+	configPath := filepath.Join(configDir, "go-home")
+	err = os.MkdirAll(configPath, 0755)
 	if err != nil {
 		return err
 	}
@@ -21,6 +24,7 @@ COLOR_PRIMARY="#7e9cd8"
 COLOR_WARNING="#ffcc00"
 COLOR_ERROR="#FF3333"
 `)
-	os.WriteFile(url+"/.env", dump, 0755)
+	envPath := filepath.Join(configPath, ".env")
+	os.WriteFile(envPath, dump, 0644)
 	return nil
 }
