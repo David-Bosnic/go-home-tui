@@ -122,7 +122,7 @@ func InitialModel() Model {
 		os.Exit(1)
 	}
 	s := spinner.New()
-	s.Spinner = spinner.Dot
+	s.Spinner = spinner.Globe
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 	eventMatrix := CreateEventMatrix(events)
 	m := Model{
