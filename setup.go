@@ -29,6 +29,11 @@ func Setup() {
 		OpenUrl("http://localhost:8080/auth/google")
 		OauthSpinUp()
 	} else {
+		apiConf.accessToken = "Bearer " + os.Getenv("ACCESS_TOKEN")
+		apiConf.calendarID = os.Getenv("CALENDAR_ID")
+		apiConf.refreshToken = os.Getenv("REFRESH_TOKEN")
+		apiConf.clientID = os.Getenv("CLIENT_ID")
+		apiConf.clientSecret = os.Getenv("CLIENT_SECRET")
 		err := RefreshOauth(apiConf)
 		if err != nil {
 			log.Printf("Failed to refresh Oauth %e", err)
