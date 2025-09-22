@@ -19,3 +19,7 @@ a simple way to check up on, lightly edit, and delete events all within the wond
 ## Setup
 
 For setup instructions go here [Setup Instructions](https://github.com/David-Bosnic/go-home-tui/blob/main/SETUP.md)
+
+## Contribute
+
+Glance here if you want to contribute [Contribute](https://github.com/David-Bosnic/go-home-tui/blob/main/.github/CONTRIBUTING.md)
