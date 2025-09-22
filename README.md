@@ -1,4 +1,7 @@
 ## Demo
+Might not exactly be the same currently, but is generally the same
+
+
 ![output](https://github.com/user-attachments/assets/61209424-d29d-40a6-b614-07cdab19fd27)
 
 ## Go-Home
@@ -10,8 +13,8 @@ Using the power of Go and [Bubble Tea](https://github.com/charmbracelet/bubblete
 a simple way to check up on, lightly edit, and delete events all within the wonderful world of the terminal.
 
 ## Note
-
-go-home is starting to solidify, but again is still needs polish.
+- go-home is starting to solidify, but again is still needs polish
+- all-day event are ignore since it does not match the philosophy of go-home
 
 ## Setup
 
