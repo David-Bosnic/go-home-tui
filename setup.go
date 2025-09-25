@@ -36,8 +36,7 @@ func Setup() {
 		apiConf.clientSecret = os.Getenv("CLIENT_SECRET")
 		err := RefreshOauth(apiConf)
 		if err != nil {
-			log.Printf("Failed to refresh Oauth %e", err)
-			os.Exit(1)
+			log.Fatalf("Failed to refresh Oauth %e", err)
 		}
 	}
 }

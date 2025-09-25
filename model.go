@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"time"
 
@@ -119,7 +118,7 @@ func InitialModel() Model {
 	fmt.Println("Loading Events...")
 	events, err := GetEvents(apiConf)
 	if err != nil {
-		os.Exit(1)
+		log.Fatalf("Failed to load events %e", err)
 	}
 	s := spinner.New()
 	s.Spinner = spinner.Globe
@@ -281,12 +280,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					formatedStartTime := fmt.Sprintf("%sT%s:00-06:00", m.inputs[Date].Value(), m.inputs[StartTime].Value())
 					currentEvent.Start.DateTime, err = time.Parse(time.RFC3339, formatedStartTime)
 					if err != nil {
-						log.Fatal(err)
+						log.Fatalf("Failed to parse start time %e", err)
 					}
 					formatedEndTime := fmt.Sprintf("%sT%s:00-06:00", m.inputs[Date].Value(), m.inputs[EndTime].Value())
 					currentEvent.End.DateTime, err = time.Parse(time.RFC3339, formatedEndTime)
 					if err != nil {
-						log.Fatal(err)
+						log.Fatalf("Failed to parse end time %e", err)
 					}
 
 					currentEvent.Summary = m.inputs[Summary].Value()
@@ -298,7 +297,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						err = UpdateEvent(currentEvent, m.config)
 					}
 					if err != nil {
-						log.Println("Failed to update Event:", err)
+						log.Fatalf("Failed to update Event %e", err)
 					}
 					m.newEvent = false
 					delete(m.selected, Point{x: m.cursor.x, y: m.cursor.y})
