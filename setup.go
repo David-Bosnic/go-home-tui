@@ -12,7 +12,7 @@ import (
 func Setup() {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
-		os.Exit(1)
+		log.Fatalf("Failed to get user config %e", err)
 	}
 	url := configDir + "/go-home/.env"
 	err = godotenv.Load(url)
